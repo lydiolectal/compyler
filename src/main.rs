@@ -11,7 +11,7 @@ use std::fs;
 use lex::Lexer;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "example", about = "An example of StructOpt usage.")]
+#[structopt(name = "compyler", about = "The Compyler compiler.")]
 struct Opt {
     /// Input file
     #[structopt(parse(from_os_str))]

@@ -1,5 +1,5 @@
 [package]
-name = "compiler"
+name = "compyler"
 version = "0.1.0"
 authors = ["lydiolectal <lydiding@gmail.com>"]
 
