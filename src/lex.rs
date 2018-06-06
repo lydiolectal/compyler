@@ -53,24 +53,18 @@ impl Lexer {
     pub fn lex(mut self) -> Result<Vec<Token>, Error> {
         let mut tokens = Vec::new();
 
-        /*
-        loop {
-            let next = self.next();
-
-            match next {
-                None => break,
-                Some(c) => match c {
-                    PATTERN => ACTION,
-                }
-            }
-        }
-        */
-
         while let Some(c) = self.current {
             match c {
                 'a'...'z' => tokens.push(self.lex_identifier_or_keyword()),
                 '0'...'9' => tokens.push(self.lex_integer()),
                 '#' => self.lex_comment(),
+                '\n' => tokens.push(self.lex_newline()),
+                '\\' => self.lex_backslash()?,
+                // desugars into:
+                // '\\' => match self.lex_backslash() {
+                //     Err(error) => return Err(error.into()),
+                //     Ok(unit) => unit, // in this case, would be the unit value of the unit type ()
+                // }
                 _ => return Err(Error::UnexpectedStartOfToken(c)),
             }
         }
@@ -114,6 +108,20 @@ impl Lexer {
                 break
             }
             self.next();
+        }
+    }
+
+    fn lex_newline(&mut self) -> Token {
+        self.next();
+        Token::Newline
+    }
+
+    fn lex_backslash(&mut self) -> Result<(), Error> {
+        if self.next() == Some('\n') {
+            self.next();
+            Ok(())
+        } else {
+            Err(Error::UnpairedBackslash(self.current))
         }
     }
 }
@@ -162,6 +170,27 @@ mod test {
         let lexer = Lexer::new("#this is a comment");
         let tokens = lexer.lex().unwrap();
         assert_eq!(tokens, vec![]);
+    }
+
+    #[test]
+    fn newline() {
+        let lexer = Lexer::new("\n");
+        let tokens = lexer.lex().unwrap();
+        assert_eq!(tokens, vec![Token::Newline]);
+    }
+
+    #[test]
+    fn escaped_newline() {
+        let lexer = Lexer::new("\\\n");
+        let tokens = lexer.lex().unwrap();
+        assert_eq!(tokens, vec![]);
+    }
+
+    #[test]
+    fn escaped_newline_fail() {
+        let lexer = Lexer::new("\\h");
+        let error = lexer.lex().unwrap_err();
+        assert_eq!(error, Error::UnpairedBackslash(Some('h')));
     }
 
 }
