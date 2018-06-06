@@ -1,0 +1,612 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title> Official Python Grammar (Python 2.5) </title>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+<link rel="stylesheet" href="styles/layout.css">
+</head>
+<body>
+
+<h1> Official Python Grammar (Python 2.5)</h1>
+
+<h2> Notation </h2>
+
+<p>
+This grammar is taken from the 
+<a href="http://www.python.org/doc/2.5.4/ref/ref.html">on-line Python 2.5
+language reference</a> with corrections of our own.
+It includes lexical rules.  For our purposes, the language we'll be compiling
+is a subset of that produced by the start symbol file_input.  Therefore, not
+all of these rules are relevant to the project.
+
+<p>
+The notation is an 
+extended BNF:
+<ul>
+<li> The symbol "<tt>::=</tt>" serves the same purpose as colon in Bison. 
+<li> Unquoted parentheses group.  
+<li> A trailing unquoted
+asterisk (<tt>*</tt>) indicates 0 or more repetitions.
+<li> A trailing 
+unquoted plus indicates 1 or more repetitions.
+<li> Unquoted square braces indicate an optional phrase.
+</ul>
+
+
+<h2> Lexical Structure </h2>
+
+<ol>
+<li> Comments in Python begin with "#" and continue to the end of the line.
+<li> Lines containing only blanks, tabs, and comments are ignored entirely (they
+     have no effect on indentation level).  We call these <defn>blank 
+     lines</defn> hereafter.
+<li> Blanks and tabs <i>may</i> 
+     separate lexical tokens.  They are <i>required</i> only
+     to separate two tokens only when they could be interpreted  
+     differently if concantenated together (e.g. "if" followed by "x" could be 
+     interpreted as "ifx" and "21e6" followed by
+     "in" could be interpreted as "21" followed by "e6in" without 
+     intervening space).
+     Blanks and tabs may not appear within 
+     individual lexical tokens (described in this section)
+     other than string literals.  
+<li> Outside of string literals, newlines (denoted NEWLINE below) are 
+     significant except when
+ <ul>
+    <li> They are immediately preceded by a backslash ("\") character, in 
+         which case, both backslash and newline are (in effect) replaced
+         by a space, joining the two lines they separate.
+    <li> They are enclosed in matching opening and closing brackets:
+         "(" and ")", "[" and "]", or "{" and "}".  In this case, also,
+         newline is treated as space.
+ </ul>
+<li> Aside from blank lines and multiline string literals, blanks and tabs
+     immediately at the beginnings of lines are significant (except when the
+     preceding newline has been replaced by the line-continuation 
+     rules above).  The amount of indentation
+     of a line is the <dfn>equivalent number of blanks</dfn>
+     at the beginning of that
+     line.  A tab following the equivalent of <var>N</var> blanks 
+     is equivalent to 8-(</var>N</var> <b>mod</b> 8) blanks, so that each
+     tab brings the equivalent number of blanks up to the next multiple of 8.
+<li> If one line is indented more than the preceding non-blank line, it
+     is taken to be preceded by an INDENT token.  It is an error for the 
+     first non-blank line in a file to be indented.
+<li> If one line is indented less than the preceding non-blank line, it
+     is taken to be preceded by enough DEDENT tokens to match all unmatched
+     INDENT tokens introduced by preceding more-indented lines.  The
+     end of a file is preceded by enough DEDENT tokens to match all
+     unmatched INDENT tokens.
+</ol>
+
+<pre>
+keyword ::= 
+             "and"     | "del"     | "from"    | "not"     | "while"    
+           | "as"      | "elif"    | "global"  | "or"      | "with"     
+           | "assert"  | "else"    | "if"      | "pass"    | "yield"    
+           | "break"   | "except"  | "import"  | "print"              
+           | "class"   | "exec"    | "in"      | "raise"              
+           | "continue"| "finally" | "is"      | "return"             
+           | "def"     | "for"     | "lambda"  | "try"
+
+identifier ::= 
+             (letter|"_") (letter | digit | "_")*
+  
+    (<i>where the matched string is not a keyword</i>)
+
+letter ::= 
+             lowercase | uppercase
+  
+lowercase ::= 
+             "a"|"b"|...|"z"
+  
+uppercase ::= 
+             "A"|"B"|...|"Z"
+  
+digit ::= 
+             "0"|"1"|...|"9"
+
+stringliteralpiece ::=
+             [stringprefix] (shortstring | longstring) 
+             | rawstringprefix (rawshortstring | rawlongstring)
+  
+stringprefix ::= 
+             "u" | "U"
+  
+rawstringprefix ::= 
+             "r" | "ur" | "R" | "UR" | "Ur" | "uR"
+
+shortstring ::= 
+             "'" shortstringitem1* "'"
+              | '"' shortstringitem2* '"'
+  
+rawshortstring ::= 
+             "'" rawshortstringitem1* "'"
+              | '"' rawshortstringitem2* '"'
+  
+longstring ::= 
+             "'''" &lt;shortest sequence of longstringitems not containing unescaped "'''"&gt; "'''"
+                | '"""' &lt;shortest sequence of longstringitems not containing unescaped '"""'&gt; '"""'
+  
+rawlongstring ::= 
+             "'''" &lt;shortest sequence of rawlongstringitems not containing unescaped "'''"&gt; "'''"
+                | '"""' &lt;shortest sequence of rawlongstringitems not containing unescaped '"""'&gt; '"""'
+  
+shortstringitem1 ::= 
+             &lt;any source character except "'" or newline&gt; | escapeseq
+  
+shortstringitem2 ::= 
+             &lt;any source character except '"' or newline&gt; | escapeseq
+  
+longstringitem ::= 
+             &lt;any source character except '\'&gt; | escapeseq
+  
+escapeseq ::= 
+             '\' &lt;any ASCII character&gt; | '\' &lt;1-3 octal digits&gt;
+
+rawshortstringitem1 ::= 
+             &lt;any source character except "'" or newline&gt; | rawescapeseq
+  
+rawshortstringitem2 ::= 
+             &lt;any source character except '"' or newline&gt; | rawescapeseq
+  
+rawlongstringitem ::= 
+             &lt;any source character except '\'&gt; | rawescapeseq
+
+rawescapeseq ::= 
+             '\' &lt;any ASCII character&gt;
+
+longinteger ::= 
+             integer ("l" | "L")
+  
+integer ::= 
+             decimalinteger | octinteger | hexinteger
+  
+decimalinteger ::= 
+             nonzerodigit digit* | "0"
+  
+octinteger ::= 
+             "0" octdigit+
+  
+hexinteger ::= 
+             "0" ("x" | "X") hexdigit+
+  
+nonzerodigit ::= 
+             "1"..."9"
+  
+octdigit ::= 
+             "0"..."7"
+  
+hexdigit ::= 
+             digit | "a"..."f" | "A"..."F"
+
+floatnumber ::= 
+             pointfloat | exponentfloat
+  
+pointfloat ::= 
+             [intpart] fraction | intpart "."
+  
+exponentfloat ::= 
+             (intpart | pointfloat)
+              exponent
+  
+intpart ::= 
+             digit+
+  
+fraction ::= 
+             "." digit+
+  
+exponent ::= 
+             ("e" | "E") ["+" | "-"] digit+
+
+imagnumber ::= (floatnumber | intpart) ("j" | "J")
+</pre>
+
+<h2>Grammar</h2>
+
+<pre>
+atom ::= 
+             identifier | literal | enclosure
+  
+enclosure ::= 
+             parenth_form | list_display
+                | generator_expression | dict_display
+                | string_conversion | yield_atom
+
+literal ::= 
+             stringliteral | integer | longinteger
+                | floatnumber | imagnumber
+
+stringliteral ::=
+             stringliteralpiece
+             | stringliteral stringliteralpiece
+
+parenth_form ::= 
+             "(" [expression_list] ")"
+
+list_display ::= 
+             "[" [expression_list | list_comprehension] "]"
+  
+list_comprehension ::= 
+             expression list_for
+  
+list_for ::= 
+             "for" target_list "in" old_expression_list
+              [list_iter]
+  
+old_expression_list ::= 
+             old_expression
+              [("," old_expression)+ [","]]
+  
+list_iter ::= 
+             list_for | list_if
+  
+list_if ::= 
+             "if" old_expression [list_iter]
+
+generator_expression ::= 
+             "(" expression genexpr_for ")"
+  
+genexpr_for ::= 
+             "for" target_list "in" or_test
+              [genexpr_iter]
+  
+genexpr_iter ::= 
+             genexpr_for | genexpr_if
+  
+genexpr_if ::= 
+             "if" old_expression [genexpr_iter]
+
+dict_display ::= 
+             "{" [key_datum_list] "}"
+  
+key_datum_list ::= 
+             key_datum ("," key_datum)* [","]
+  
+key_datum ::= 
+             expression ":" expression
+
+string_conversion ::= 
+             "`" expression_list "`"
+
+yield_atom ::= 
+             "(" yield_expression ")"
+  
+yield_expression ::= 
+             "yield" [expression_list]
+
+primary ::= 
+             atom | attributeref
+              | subscription | slicing | call
+
+attributeref ::= 
+             primary "." identifier
+
+subscription ::= 
+             primary "[" expression_list "]"
+
+slicing ::= 
+             simple_slicing | extended_slicing
+  
+simple_slicing ::= 
+             primary "[" short_slice "]"
+  
+extended_slicing ::= 
+             primary "[" slice_list "]" 
+  
+slice_list ::= 
+             slice_item ("," slice_item)* [","]
+  
+slice_item ::= 
+             expression | proper_slice | ellipsis
+  
+proper_slice ::= 
+             short_slice | long_slice
+  
+short_slice ::= 
+             [lower_bound] ":" [upper_bound]
+  
+long_slice ::= 
+             short_slice ":" [stride]
+  
+lower_bound ::= 
+             expression
+  
+upper_bound ::= 
+             expression
+  
+stride ::= 
+             expression
+  
+ellipsis ::= 
+             "..."
+
+call ::= 
+             primary "(" [argument_list [","]
+                            | expression genexpr_for] ")"
+  
+argument_list ::= 
+             positional_arguments ["," keyword_arguments]
+                                     ["," "*" expression]
+                                     ["," "**" expression]
+                | keyword_arguments ["," "*" expression]
+                                    ["," "**" expression]
+                | "*" expression ["," "**" expression]
+                | "**" expression
+  
+positional_arguments ::= 
+             expression ("," expression)*
+  
+keyword_arguments ::= 
+             keyword_item ("," keyword_item)*
+  
+keyword_item ::= 
+             identifier "=" expression
+
+power ::= 
+             primary ["**" u_expr]
+
+u_expr ::= 
+             power | "-" u_expr
+              | "+" u_expr | "~" u_expr
+
+m_expr ::= 
+             u_expr | m_expr "*" u_expr
+              | m_expr "//" u_expr
+              | m_expr "/" u_expr
+                | m_expr "%" u_expr
+  
+a_expr ::= 
+             m_expr | a_expr "+" m_expr
+              | a_expr "-" m_expr
+
+shift_expr ::= 
+             a_expr
+              | shift_expr ( "&lt;&lt;" | "&gt;&gt;" ) a_expr
+
+and_expr ::= 
+             shift_expr | and_expr "&amp;" shift_expr
+  
+xor_expr ::= 
+             and_expr | xor_expr "^" and_expr
+  
+or_expr ::= 
+             xor_expr | or_expr "|" xor_expr
+
+comparison ::= 
+             or_expr ( comp_operator or_expr )*
+  
+comp_operator ::= 
+             "&lt;" | "&gt;" | "==" | "&gt;=" | "&lt;=" | "&lt;&gt;" | "!="
+                | "is" ["not"] | ["not"] "in"
+
+expression ::= 
+             conditional_expression | lambda_form
+  
+old_expression ::= 
+             or_test | old_lambda_form
+  
+conditional_expression ::= 
+             or_test ["if" or_test "else" expression]
+  
+or_test ::= 
+             and_test | or_test "or" and_test
+  
+and_test ::= 
+             not_test | and_test "and" not_test
+  
+not_test ::= 
+             comparison | "not" not_test
+
+lambda_form ::= 
+             "lambda" [parameter_list] ":" expression
+  
+old_lambda_form ::= 
+             "lambda" [parameter_list] ":" old_expression
+
+expression_list ::= 
+             expression ( "," expression )* [","]
+
+simple_stmt ::= expression_stmt
+                | assert_stmt
+                | assignment_stmt
+                | augmented_assignment_stmt
+                | pass_stmt
+                | del_stmt
+                | print_stmt
+                | return_stmt
+                | yield_stmt
+                | raise_stmt
+                | break_stmt
+                | continue_stmt
+                | import_stmt
+                | global_stmt
+                | exec_stmt
+
+expression_stmt ::= 
+             expression_list
+
+assert_stmt ::= 
+             "assert" expression ["," expression]
+
+assignment_stmt ::= 
+             (target_list "=")+
+              (expression_list | yield_expression)
+  
+target_list ::= 
+             target ("," target)* [","]
+  
+target ::= 
+             identifier
+                | "(" target_list ")"
+                | "[" target_list "]"
+                | attributeref
+                | subscription
+                | slicing
+
+augmented_assignment_stmt ::= 
+             target augop
+              (expression_list | yield_expression)
+  
+augop ::= 
+             "+=" | "-=" | "*=" | "/=" | "//=" | "%=" | "**="
+                | "&gt;&gt;=" | "&lt;&lt;=" | "&amp;=" | "^=" | "|="
+
+pass_stmt ::= 
+             "pass"
+
+del_stmt ::= 
+             "del" target_list
+
+print_stmt ::= 
+             "print" (  [expression ("," expression)* [","]]
+                      | "&gt;&gt;" expression [("," expression)+ [","]] )
+
+return_stmt ::= 
+             "return" [expression_list]
+
+yield_stmt ::= 
+             yield_expression
+
+raise_stmt ::= 
+             "raise" [expression ["," expression
+              ["," expression]]]
+
+break_stmt ::= 
+             "break"
+
+continue_stmt ::= 
+             "continue"
+
+import_stmt ::= 
+             "import" module ["as" name]
+                ( "," module ["as" name] )*
+                | "from" relative_module "import" identifier
+                    ["as" name]
+                  ( "," identifier ["as" name] )*
+                | "from" relative_module "import" "("
+                    identifier ["as" name]
+                  ( "," identifier ["as" name] )* [","] ")"
+                | "from" module "import" "*"
+  
+module ::= 
+             (identifier ".")* identifier
+  
+relative_module ::= 
+             "."* module | "."+
+  
+name ::= 
+             identifier
+
+global_stmt ::= 
+             "global" identifier ("," identifier)*
+
+exec_stmt ::= 
+             "exec" or_expr
+              ["in" expression ["," expression]]
+
+compound_stmt ::= 
+             if_stmt
+                | while_stmt
+                | for_stmt
+                | try_stmt
+                | with_stmt
+                | funcdef
+                | classdef
+  
+suite ::= 
+             stmt_list NEWLINE
+              | NEWLINE INDENT statement+ DEDENT
+  
+statement ::= 
+             stmt_list NEWLINE | compound_stmt
+  
+stmt_list ::= 
+             simple_stmt (";" simple_stmt)* [";"]
+
+if_stmt ::= 
+             "if" expression ":" suite
+                ( "elif" expression ":" suite )*
+                ["else" ":" suite]
+
+while_stmt ::= 
+             "while" expression ":" suite
+                ["else" ":" suite]
+
+for_stmt ::= 
+             "for" target_list "in" expression_list
+              ":" suite
+                ["else" ":" suite]
+
+try_stmt ::=  try1_stmt | try2_stmt
+  
+try1_stmt ::= 
+             "try" ":" suite
+                ("except" [expression
+                             ["," target]] ":" suite)+
+                ["else" ":" suite]
+                ["finally" ":" suite]
+  
+try2_stmt ::= 
+             "try" ":" suite
+                "finally" ":" suite
+
+with_stmt ::= 
+  "with" expression ["as" target] ":" suite
+
+funcdef ::= 
+             [decorators] "def" funcname "(" [parameter_list] ")"
+              ":" suite
+  
+decorators ::= 
+             decorator+
+  
+decorator ::= 
+             "@" dotted_name ["(" [argument_list [","]] ")"] NEWLINE
+  
+dotted_name ::= 
+             identifier ("." identifier)*
+  
+parameter_list ::= 
+                 (defparameter ",")*
+                ("*" identifier [, "**" identifier]
+                 | "**" identifier
+                 | defparameter [","] )
+  
+defparameter ::= 
+             parameter ["=" expression]
+  
+sublist ::= 
+             parameter ("," parameter)* [","]
+  
+parameter ::= 
+             identifier | "(" sublist ")"
+  
+funcname ::= 
+             identifier
+
+classdef ::= 
+             "class" classname [inheritance] ":"
+              suite
+  
+inheritance ::= 
+             "(" [expression_list] ")"
+  
+classname ::= 
+             identifier
+
+file_input ::= 
+             (NEWLINE | statement)*
+
+interactive_input ::= 
+             [stmt_list] NEWLINE | compound_stmt NEWLINE
+
+eval_input ::= 
+             expression_list NEWLINE*
+
+input_input ::= 
+             expression_list NEWLINE
+</pre>
+
+</body>
+</html>
