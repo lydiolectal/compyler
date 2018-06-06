@@ -4,6 +4,7 @@ use error::Error;
 pub struct Lexer {
     chars:   Vec<char>,
     current: Option<char>,
+    column: u64,
 }
 
 impl Lexer {
@@ -37,6 +38,7 @@ impl Lexer {
             // as flowing from the outputs to the inputs
             chars: chars,
             current: current,
+            column: 0,
         }
     }
 
@@ -46,7 +48,7 @@ impl Lexer {
         } else {
             self.current = Some(self.chars.remove(0));
         }
-
+        self.column += 1;
         self.current
     }
 
@@ -54,17 +56,24 @@ impl Lexer {
         let mut tokens = Vec::new();
 
         while let Some(c) = self.current {
+            if self.column == 0 {
+                // skip characters, generate indent and/or dedent
+                continue;
+            }
+
             match c {
                 'a'...'z' => tokens.push(self.lex_identifier_or_keyword()),
                 '0'...'9' => tokens.push(self.lex_integer()),
                 '#' => self.lex_comment(),
                 '\n' => tokens.push(self.lex_newline()),
                 '\\' => self.lex_backslash()?,
-                // desugars into:
-                // '\\' => match self.lex_backslash() {
-                //     Err(error) => return Err(error.into()),
-                //     Ok(unit) => unit, // in this case, would be the unit value of the unit type ()
-                // }
+            // desugars into:
+            // '\\' => match self.lex_backslash() {
+            //     Err(error) => return Err(error.into()),
+            //     Ok(unit) => unit, // in this case, would be the unit value of the unit type ()
+            // }
+                ' ' if self.column == 0 => self.lex_indent(),
+                ' ' => self.lex_whitespace(),
                 _ => return Err(Error::UnexpectedStartOfToken(c)),
             }
         }
@@ -113,6 +122,7 @@ impl Lexer {
 
     fn lex_newline(&mut self) -> Token {
         self.next();
+        self.column = 0;
         Token::Newline
     }
 
@@ -124,11 +134,20 @@ impl Lexer {
             Err(Error::UnpairedBackslash(self.current))
         }
     }
+
+    fn lex_indent()
+
+    fn lex_whitespace(&mut self) {
+        while self.next() == Some(' ') {
+        }
+    }
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
+
+    use token::Token::*;
 
     #[test]
     fn empty_string() {
@@ -148,21 +167,21 @@ mod test {
     fn lowercase_identifier() {
         let lexer = Lexer::new("hi");
         let tokens = lexer.lex().unwrap();
-        assert_eq!(tokens, vec![Token::Identifier("hi".to_owned())]);
+        assert_eq!(tokens, vec![Identifier("hi".to_owned())]);
     }
 
     #[test]
     fn if_keyword() {
         let lexer = Lexer::new("if");
         let tokens = lexer.lex().unwrap();
-        assert_eq!(tokens, vec![Token::If]);
+        assert_eq!(tokens, vec![If]);
     }
 
     #[test]
     fn decimal_integer() {
         let lexer = Lexer::new("1234");
         let tokens = lexer.lex().unwrap();
-        assert_eq!(tokens, vec![Token::Integer(1234)]);
+        assert_eq!(tokens, vec![Integer(1234)]);
     }
 
     #[test]
@@ -176,7 +195,7 @@ mod test {
     fn newline() {
         let lexer = Lexer::new("\n");
         let tokens = lexer.lex().unwrap();
-        assert_eq!(tokens, vec![Token::Newline]);
+        assert_eq!(tokens, vec![Newline]);
     }
 
     #[test]
@@ -192,5 +211,35 @@ mod test {
         let error = lexer.lex().unwrap_err();
         assert_eq!(error, Error::UnpairedBackslash(Some('h')));
     }
+
+    #[test]
+    fn blank_line() {
+        let lexer = Lexer::new("  ");
+        let tokens = lexer.lex().unwrap();
+        assert_eq!(tokens, vec![]);
+    }
+
+    #[test]
+    fn indent() {
+        let lexer = Lexer::new("  39");
+        let tokens = lexer.lex().unwrap();
+        assert_eq!(tokens, vec![Indent, Integer(39), Dedent]);
+    }
+
+    #[test]
+    fn blank_line_comments() {
+        let lexer = Lexer::new("  #this is a comment");
+        let tokens = lexer.lex().unwrap();
+        assert_eq!(tokens, vec![]);
+    }
+
+    #[test]
+    fn dedent() {
+        let lexer = Lexer::new("  39\nhmm");
+        let tokens = lexer.lex().unwrap();
+        assert_eq!(tokens, vec![Indent, Integer(39), Dedent, Identifier("hmm".into())]);
+    }
+
+
 
 }

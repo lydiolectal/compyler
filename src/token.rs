@@ -4,4 +4,6 @@ pub enum Token {
     If,
     Integer(u32),
     Newline,
+    Indent,
+    Dedent,
 }
