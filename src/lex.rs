@@ -5,6 +5,11 @@ pub struct Lexer {
     chars:   Vec<char>,
     current: Option<char>,
     column: u64,
+    indent_stack: Vec<u64>,
+    // false until we've encountered a nonblank character on a line.
+    // |  asdfb
+    //  ffftttt
+    seen_nonblank: bool,
 }
 
 impl Lexer {
@@ -26,6 +31,7 @@ impl Lexer {
         // would be a type error, since collect doesn't
         // know what kind of collection to construct
         let chars = i.collect();
+        let mut indent_stack = vec![0];
 
         Lexer {
             // here, however, the ambiguity is resolved!
@@ -39,10 +45,18 @@ impl Lexer {
             chars: chars,
             current: current,
             column: 0,
+            // indent_stack
+            // - push current level of indentation onto stack whenever I add indent token.
+            // - ex: [2, 4, 7, 9] means that indent, respectively, were: [2, 2, 3, 2].
+            indent_stack: indent_stack,
+            seen_nonblank: false,
         }
     }
 
     fn next(&mut self) -> Option<char> {
+        if self.current != Some(' ') {
+            self.seen_nonblank = true;
+        }
         if self.chars.is_empty() {
             self.current = None;
         } else {
@@ -56,9 +70,54 @@ impl Lexer {
         let mut tokens = Vec::new();
 
         while let Some(c) = self.current {
-            if self.column == 0 {
-                // skip characters, generate indent and/or dedent
-                continue;
+            // - skip characters until reach non-blank. (self.column tracks # traversed.)
+            // - if comment or newline, don't do anything; let match handle them.
+            if !self.seen_nonblank && c != ' ' && c != '#' && c != '\n' {
+                // check self.column against indent stack;
+                let cur_indentation = match self.indent_stack.pop() {
+                    Some(cur_indentation) => cur_indentation,
+                    None => 0,
+                };
+                match self.column {
+                    col if col == cur_indentation => {
+                        // if == indent_stack.pop,
+                        // no new indent or dedent needed.
+                        self.indent_stack.push(cur_indentation);
+                    }
+                    col if col > cur_indentation => {
+                        // elif self.column > indent_stack.pop, add indent token. Push current
+                        // level of indentation to indent_stack.
+                        tokens.push(Token::Indent);
+                        self.indent_stack.push(cur_indentation);
+                        self.indent_stack.push(col);
+                    }
+                    _ => {
+                        let mut dedents = 0;
+                        let indentation_level = match self.indent_stack.pop() {
+                            Some(indentation_level) => indentation_level,
+                            None => 0,
+                        };
+                        // else self.column < indent_stack.pop, keep popping off indent stack until column
+                        // and thing popped are equal OR thing popped is less than self.column.
+                        while indentation_level > self.column {
+                            dedents += 1;
+                            let indentation_level = match self.indent_stack.pop() {
+                                Some(indentation_level) => indentation_level,
+                                None => 0,
+                            };
+                        }
+                        if indentation_level == self.column {
+                            // issue # of dedents eq to # items popped.
+                            for _ in 0..dedents {
+                                tokens.push(Token::Dedent);
+                            }
+                            self.indent_stack.push(indentation_level);
+                        }
+                        else if indentation_level < self.column {
+                            return Err(Error::UnmatchedIndentationLevel(self.column));
+                        }
+                    }
+                }
             }
 
             match c {
@@ -72,10 +131,16 @@ impl Lexer {
             //     Err(error) => return Err(error.into()),
             //     Ok(unit) => unit, // in this case, would be the unit value of the unit type ()
             // }
-                ' ' if self.column == 0 => self.lex_indent(),
+                // ' ' if self.column == 0 => tokens.push(self.lex_indent()),
                 ' ' => self.lex_whitespace(),
                 _ => return Err(Error::UnexpectedStartOfToken(c)),
             }
+        }
+
+        // - count number of indents on indent_stack
+        // - add same # of dedent tokens to token vector. :)
+        for _ in 0..self.indent_stack.len()-1 {
+            tokens.push(Token::Dedent);
         }
 
         Ok(tokens)
@@ -123,6 +188,7 @@ impl Lexer {
     fn lex_newline(&mut self) -> Token {
         self.next();
         self.column = 0;
+        self.seen_nonblank = false;
         Token::Newline
     }
 
@@ -135,7 +201,10 @@ impl Lexer {
         }
     }
 
-    fn lex_indent()
+    fn lex_indent(&mut self) -> Token {
+        self.next();
+        Token::Indent
+    }
 
     fn lex_whitespace(&mut self) {
         while self.next() == Some(' ') {
@@ -237,9 +306,6 @@ mod test {
     fn dedent() {
         let lexer = Lexer::new("  39\nhmm");
         let tokens = lexer.lex().unwrap();
-        assert_eq!(tokens, vec![Indent, Integer(39), Dedent, Identifier("hmm".into())]);
+        assert_eq!(tokens, vec![Indent, Integer(39), Newline, Dedent, Identifier("hmm".into())]);
     }
-
-
-
 }
