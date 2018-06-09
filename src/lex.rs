@@ -75,7 +75,7 @@ impl Lexer {
             if !self.seen_nonblank && c != ' ' && c != '#' && c != '\n' {
                 // check self.column against indent stack;
                 let cur_indentation = match self.indent_stack.pop() {
-                    Some(cur_indentation) => cur_indentation,
+                    Some(i) => i,
                     None => 0,
                 };
                 match self.column {
@@ -94,15 +94,16 @@ impl Lexer {
                     _ => {
                         let mut dedents = 0;
                         let indentation_level = match self.indent_stack.pop() {
-                            Some(indentation_level) => indentation_level,
+                            Some(i) => i,
                             None => 0,
                         };
+                        dedents += 1;
                         // else self.column < indent_stack.pop, keep popping off indent stack until column
                         // and thing popped are equal OR thing popped is less than self.column.
                         while indentation_level > self.column {
                             dedents += 1;
                             let indentation_level = match self.indent_stack.pop() {
-                                Some(indentation_level) => indentation_level,
+                                Some(i) => i,
                                 None => 0,
                             };
                         }
