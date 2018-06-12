@@ -31,7 +31,7 @@ impl Lexer {
         // would be a type error, since collect doesn't
         // know what kind of collection to construct
         let chars = i.collect();
-        let mut indent_stack = vec![0];
+        let indent_stack = vec![0];
 
         Lexer {
             // here, however, the ambiguity is resolved!
@@ -68,55 +68,25 @@ impl Lexer {
 
     pub fn lex(mut self) -> Result<Vec<Token>, Error> {
         let mut tokens = Vec::new();
-
         while let Some(c) = self.current {
-            // - skip characters until reach non-blank. (self.column tracks # traversed.)
-            // - if comment or newline, don't do anything; let match handle them.
             if !self.seen_nonblank && c != ' ' && c != '#' && c != '\n' {
-                // check self.column against indent stack;
-                let cur_indentation = match self.indent_stack.pop() {
-                    Some(i) => i,
-                    None => 0,
-                };
-                match self.column {
-                    col if col == cur_indentation => {
-                        // if == indent_stack.pop,
-                        // no new indent or dedent needed.
-                        self.indent_stack.push(cur_indentation);
+                // unwrap_or works on option and result types: will return the Some/Ok but wrapped
+                // value for err/none.
+                // cloned() clones the inner value of option, because last() returns option(&u64).
+                let cur_indentation = self.indent_stack.last().cloned().unwrap();
+                if self.column == cur_indentation {
+                } else if self.column > cur_indentation {
+                    tokens.push(Token::Indent);
+                    self.indent_stack.push(self.column);
+                } else if self.column < cur_indentation {
+                    let mut indentation_level = self.indent_stack.pop().unwrap();
+                    while indentation_level > self.column {
+                        indentation_level = self.indent_stack.pop().unwrap();
+                        tokens.push(Token::Dedent);
                     }
-                    col if col > cur_indentation => {
-                        // elif self.column > indent_stack.pop, add indent token. Push current
-                        // level of indentation to indent_stack.
-                        tokens.push(Token::Indent);
-                        self.indent_stack.push(cur_indentation);
-                        self.indent_stack.push(col);
-                    }
-                    _ => {
-                        let mut dedents = 0;
-                        let indentation_level = match self.indent_stack.pop() {
-                            Some(i) => i,
-                            None => 0,
-                        };
-                        dedents += 1;
-                        // else self.column < indent_stack.pop, keep popping off indent stack until column
-                        // and thing popped are equal OR thing popped is less than self.column.
-                        while indentation_level > self.column {
-                            dedents += 1;
-                            let indentation_level = match self.indent_stack.pop() {
-                                Some(i) => i,
-                                None => 0,
-                            };
-                        }
-                        if indentation_level == self.column {
-                            // issue # of dedents eq to # items popped.
-                            for _ in 0..dedents {
-                                tokens.push(Token::Dedent);
-                            }
-                            self.indent_stack.push(indentation_level);
-                        }
-                        else if indentation_level < self.column {
-                            return Err(Error::UnmatchedIndentationLevel(self.column));
-                        }
+                    self.indent_stack.push(indentation_level);
+                    if indentation_level < self.column {
+                        return Err(Error::UnmatchedIndentationLevel(self.column));
                     }
                 }
             }
@@ -159,6 +129,7 @@ impl Lexer {
 
         match text.as_str() {
             "if" => Token::If,
+            "print" => Token::Print,
             _ => Token::Identifier(text),
         }
     }
@@ -200,11 +171,6 @@ impl Lexer {
         } else {
             Err(Error::UnpairedBackslash(self.current))
         }
-    }
-
-    fn lex_indent(&mut self) -> Token {
-        self.next();
-        Token::Indent
     }
 
     fn lex_whitespace(&mut self) {
@@ -308,5 +274,27 @@ mod test {
         let lexer = Lexer::new("  39\nhmm");
         let tokens = lexer.lex().unwrap();
         assert_eq!(tokens, vec![Indent, Integer(39), Newline, Dedent, Identifier("hmm".into())]);
+    }
+
+    #[test]
+    fn multiple_indent() {
+        let lexer = Lexer::new("  39\n   hmm\n  1");
+        let tokens = lexer.lex().unwrap();
+        assert_eq!(tokens, vec![Indent, Integer(39), Newline, Indent, Identifier("hmm".into()),
+            Newline, Dedent, Integer(1), Dedent]);
+    }
+
+    #[test]
+    fn illegal_indent() {
+        let lexer = Lexer::new("  39\n   hmm\n 1");
+        let tokens = lexer.lex().unwrap_err();
+        assert_eq!(tokens, Error::UnmatchedIndentationLevel(1));
+    }
+
+    #[test]
+    fn print() {
+        let lexer = Lexer::new("print");
+        let tokens = lexer.lex().unwrap();
+        assert_eq!(tokens, vec![Print]);
     }
 }

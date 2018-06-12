@@ -1,0 +1,12 @@
+
+    // - skip characters until reach non-blank. (self.column tracks # traversed.)
+    // - if comment or newline, don't do anything; let match handle them.
+    // check self.column against indent stack;
+    
+    // if == indent_stack.pop,
+    // no new indent or dedent needed.
+    // self.indent_stack.push(cur_indentation);
+    // elif self.column > indent_stack.pop, add indent token. Push current
+    // level of indentation to indent_stack.
+    // else self.column < indent_stack.pop, keep popping off indent stack until column
+    // and thing popped are equal OR thing popped is less than self.column.
