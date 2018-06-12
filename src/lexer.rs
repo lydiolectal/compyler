@@ -113,6 +113,7 @@ impl Lexer {
         for _ in 0..self.indent_stack.len()-1 {
             tokens.push(Token::Dedent);
         }
+        tokens.push(Token::Eof);
 
         Ok(tokens)
     }
@@ -182,14 +183,13 @@ impl Lexer {
 #[cfg(test)]
 mod test {
     use super::*;
-
     use token::Token::*;
 
     #[test]
     fn empty_string() {
         let lexer  = Lexer::new("");
         let tokens = lexer.lex().unwrap();
-        assert_eq!(tokens, vec![]);
+        assert_eq!(tokens, vec![Eof]);
     }
 
     #[test]
@@ -203,42 +203,42 @@ mod test {
     fn lowercase_identifier() {
         let lexer = Lexer::new("hi");
         let tokens = lexer.lex().unwrap();
-        assert_eq!(tokens, vec![Identifier("hi".to_owned())]);
+        assert_eq!(tokens, vec![Identifier("hi".to_owned()), Eof]);
     }
 
     #[test]
     fn if_keyword() {
         let lexer = Lexer::new("if");
         let tokens = lexer.lex().unwrap();
-        assert_eq!(tokens, vec![If]);
+        assert_eq!(tokens, vec![If, Eof]);
     }
 
     #[test]
     fn decimal_integer() {
         let lexer = Lexer::new("1234");
         let tokens = lexer.lex().unwrap();
-        assert_eq!(tokens, vec![Integer(1234)]);
+        assert_eq!(tokens, vec![Integer(1234), Eof]);
     }
 
     #[test]
     fn comment() {
         let lexer = Lexer::new("#this is a comment");
         let tokens = lexer.lex().unwrap();
-        assert_eq!(tokens, vec![]);
+        assert_eq!(tokens, vec![Eof]);
     }
 
     #[test]
     fn newline() {
         let lexer = Lexer::new("\n");
         let tokens = lexer.lex().unwrap();
-        assert_eq!(tokens, vec![Newline]);
+        assert_eq!(tokens, vec![Newline, Eof]);
     }
 
     #[test]
     fn escaped_newline() {
         let lexer = Lexer::new("\\\n");
         let tokens = lexer.lex().unwrap();
-        assert_eq!(tokens, vec![]);
+        assert_eq!(tokens, vec![Eof]);
     }
 
     #[test]
@@ -252,28 +252,28 @@ mod test {
     fn blank_line() {
         let lexer = Lexer::new("  ");
         let tokens = lexer.lex().unwrap();
-        assert_eq!(tokens, vec![]);
+        assert_eq!(tokens, vec![Eof]);
     }
 
     #[test]
     fn indent() {
         let lexer = Lexer::new("  39");
         let tokens = lexer.lex().unwrap();
-        assert_eq!(tokens, vec![Indent, Integer(39), Dedent]);
+        assert_eq!(tokens, vec![Indent, Integer(39), Dedent, Eof]);
     }
 
     #[test]
     fn blank_line_comments() {
         let lexer = Lexer::new("  #this is a comment");
         let tokens = lexer.lex().unwrap();
-        assert_eq!(tokens, vec![]);
+        assert_eq!(tokens, vec![Eof]);
     }
 
     #[test]
     fn dedent() {
         let lexer = Lexer::new("  39\nhmm");
         let tokens = lexer.lex().unwrap();
-        assert_eq!(tokens, vec![Indent, Integer(39), Newline, Dedent, Identifier("hmm".into())]);
+        assert_eq!(tokens, vec![Indent, Integer(39), Newline, Dedent, Identifier("hmm".into()), Eof]);
     }
 
     #[test]
@@ -281,7 +281,7 @@ mod test {
         let lexer = Lexer::new("  39\n   hmm\n  1");
         let tokens = lexer.lex().unwrap();
         assert_eq!(tokens, vec![Indent, Integer(39), Newline, Indent, Identifier("hmm".into()),
-            Newline, Dedent, Integer(1), Dedent]);
+            Newline, Dedent, Integer(1), Dedent, Eof]);
     }
 
     #[test]
@@ -295,6 +295,6 @@ mod test {
     fn print() {
         let lexer = Lexer::new("print");
         let tokens = lexer.lex().unwrap();
-        assert_eq!(tokens, vec![Print]);
+        assert_eq!(tokens, vec![Print, Eof]);
     }
 }

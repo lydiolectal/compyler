@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Token {
     Identifier(String),
     If,
@@ -7,4 +7,5 @@ pub enum Token {
     Newline,
     Indent,
     Dedent,
+    Eof,
 }

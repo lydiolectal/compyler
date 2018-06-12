@@ -1,14 +1,15 @@
 #[macro_use]
 extern crate structopt;
 
-mod lex;
+mod lexer;
 mod token;
 mod error;
+mod parser;
 
 use std::path::PathBuf;
 use structopt::StructOpt;
 use std::fs;
-use lex::Lexer;
+use lexer::Lexer;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "compyler", about = "The Compyler compiler.")]
