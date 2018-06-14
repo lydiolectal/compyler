@@ -3,6 +3,7 @@ pub enum Token {
     Identifier(String),
     If,
     Print,
+    Def,
     Integer(u32),
     Newline,
     Indent,

@@ -14,6 +14,7 @@ pub struct Program {
 #[derive(Debug, PartialEq)]
 pub enum Statement {
     Print(Expression),
+    SimpleAssignment(String, Expression),
 }
 
 #[derive(Debug, PartialEq)]
@@ -25,7 +26,7 @@ pub enum Expression {
 #[derive(Debug, PartialEq)]
 pub enum Value {
     Integer(u32),
-    // String(String),
+    Variable(String),
 }
 
 impl Parser {
@@ -77,10 +78,14 @@ impl Parser {
     }
 
     fn parse_value(&mut self) -> Result<Value, Error> {
-        match self.current {
+        match self.current.clone() {
             Integer(i) => {
                 self.next();
                 Ok(Value::Integer(i))
+            }
+            Identifier(s) => {
+                self.next();
+                Ok(Value::Variable(s))
             }
             _ => Err(Error::UnexpectedToken(self.current.clone())),
         }
@@ -111,9 +116,15 @@ mod test {
     }
 
     #[test]
-    fn print() {
+    fn print_integer() {
         let program = parse("print 7").unwrap();
         assert_eq!(program.statements, vec![Statement::Print(Expression::Simple(Value::Integer(7)))]);
+    }
+
+    #[test]
+    fn print_variable() {
+        let program = parse("print name").unwrap();
+        assert_eq!(program.statements, vec![Statement::Print(Expression::Simple(Value::Variable("name".to_owned())))]);
     }
 
 }

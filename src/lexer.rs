@@ -131,6 +131,7 @@ impl Lexer {
         match text.as_str() {
             "if" => Token::If,
             "print" => Token::Print,
+            "def" => Token::Def,
             _ => Token::Identifier(text),
         }
     }
@@ -296,5 +297,12 @@ mod test {
         let lexer = Lexer::new("print");
         let tokens = lexer.lex().unwrap();
         assert_eq!(tokens, vec![Print, Eof]);
+    }
+
+    #[test]
+    fn def() {
+        let lexer = Lexer::new("def");
+        let tokens = lexer.lex().unwrap();
+        assert_eq!(tokens, vec![Def, Eof]);
     }
 }
