@@ -127,4 +127,17 @@ mod test {
         assert_eq!(program.statements, vec![Statement::Print(Expression::Simple(Value::Variable("name".to_owned())))]);
     }
 
+    macro_rules! test {
+        () => {
+
+        }
+    }
+
+    test! {
+        name:    print_variable,
+        text:    "print name",
+        program: Program{statements: vec![
+            Statement::Print(Expression::Simple(Value::Variable("name".to_owned())))
+       ]},
+    }
 }

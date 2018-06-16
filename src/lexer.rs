@@ -104,6 +104,27 @@ impl Lexer {
             // }
                 // ' ' if self.column == 0 => tokens.push(self.lex_indent()),
                 ' ' => self.lex_whitespace(),
+                '(' => {
+                    tokens.push(Token::ParenL);
+                    self.next();
+                }
+                ')' => {
+                    tokens.push(Token::ParenR);
+                    self.next();
+                }
+                '+' => {
+                    tokens.push(Token::Plus);
+                    self.next();
+                }
+                '-' => {
+                    tokens.push(Token::Minus);
+                    self.next();
+                }
+                ':' => {
+                    tokens.push(Token::Colon);
+                    self.next();
+                }
+                 '=' => tokens.push(self.lex_equals()?),
                 _ => return Err(Error::UnexpectedStartOfToken(c)),
             }
         }
@@ -122,7 +143,7 @@ impl Lexer {
         let mut text = String::new();
         while let Some(c) = self.current {
             match c {
-                'a'...'z' => text.push(c),
+                'a'...'z' | '0'...'9' => text.push(c),
                 _ => break,
             }
             self.next();
@@ -130,8 +151,11 @@ impl Lexer {
 
         match text.as_str() {
             "if" => Token::If,
+            "elif" => Token::Elif,
+            "else" => Token::Else,
             "print" => Token::Print,
             "def" => Token::Def,
+            "return" => Token::Return,
             _ => Token::Identifier(text),
         }
     }
@@ -179,12 +203,23 @@ impl Lexer {
         while self.next() == Some(' ') {
         }
     }
+
+    fn lex_equals(&mut self) -> Result<Token, Error> {
+        if self.next() == Some('=') {
+            self.next();
+            Ok(Token::EqEq)
+        } else {
+            Err(Error::UnexpectedCharacter(self.current))
+        }
+
+    }
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
     use token::Token::*;
+    use error::Error::*;
 
     #[test]
     fn empty_string() {
@@ -304,5 +339,113 @@ mod test {
         let lexer = Lexer::new("def");
         let tokens = lexer.lex().unwrap();
         assert_eq!(tokens, vec![Def, Eof]);
+    }
+
+    #[test]
+    fn elif() {
+        let lexer = Lexer::new("elif");
+        let tokens = lexer.lex().unwrap();
+        assert_eq!(tokens, vec![Elif, Eof]);
+    }
+
+    #[test]
+    fn else_token() {
+        let lexer = Lexer::new("else");
+        let tokens = lexer.lex().unwrap();
+        assert_eq!(tokens, vec![Else, Eof]);
+    }
+
+    #[test]
+    fn parenl() {
+        let lexer = Lexer::new("(");
+        let tokens = lexer.lex().unwrap();
+        assert_eq!(tokens, vec![ParenL, Eof]);
+    }
+
+    #[test]
+    fn parenr() {
+        let lexer = Lexer::new(")");
+        let tokens = lexer.lex().unwrap();
+        assert_eq!(tokens, vec![ParenR, Eof]);
+    }
+
+    #[test]
+    fn return_token() {
+        let lexer = Lexer::new("return");
+        let tokens = lexer.lex().unwrap();
+        assert_eq!(tokens, vec![Return, Eof]);
+    }
+
+    #[test]
+    fn colon() {
+        let lexer = Lexer::new(":");
+        let tokens = lexer.lex().unwrap();
+        assert_eq!(tokens, vec![Colon, Eof]);
+    }
+
+    #[test]
+    fn eqeq() {
+        let lexer = Lexer::new("==");
+        let tokens = lexer.lex().unwrap();
+        assert_eq!(tokens, vec![EqEq, Eof]);
+    }
+
+    #[test]
+    fn eqeq_error() {
+        let lexer = Lexer::new("=");
+        let error = lexer.lex().unwrap_err();
+        assert_eq!(error, Error::UnexpectedCharacter(None));
+    }
+
+    macro_rules! token_test {
+        (
+            name:  $name:ident,
+            text:  $text:expr,
+            token: $expected:expr,
+        ) => {
+            #[test]
+            fn $name() {
+                let text = $text;
+                let expected = $expected;
+                let lexer = Lexer::new(text);
+                let tokens = lexer.lex().unwrap();
+                assert_eq!(tokens, vec![expected, Eof]);
+            }
+        }
+    }
+
+    token_test! {
+        name:  minus,
+        text:  "-",
+        token: Minus,
+    }
+
+    token_test! {
+        name:  plus,
+        text:  "+",
+        token: Plus,
+    }
+
+    macro_rules! error_test {
+        (
+            name:  $name:ident,
+            text:  $text:expr,
+            error: $expected:expr,
+        ) => {
+            #[test]
+            fn $name() {
+                let text = $text;
+                let expected = $expected;
+                let lexer = Lexer::new(text);
+                let error = lexer.lex().unwrap_err();
+                assert_eq!(error, expected);
+            }
+        }
+    }
+
+    error_test! {
+        name:  eqeq_error_again,
+        text:  "=",
+        error: UnexpectedCharacter(None),
     }
 }
