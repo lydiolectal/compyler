@@ -221,7 +221,6 @@ mod test {
     use token::Token::*;
     use error::Error::*;
 
-    // TODO: rewrite macro to take in vec for token, then extend that vec by Eof token
     macro_rules! token_test {
         (
             name:  $name:ident,
@@ -240,18 +239,33 @@ mod test {
         }
     }
 
-    #[test]
-    fn empty_string() {
-        let lexer  = Lexer::new("");
-        let tokens = lexer.lex().unwrap();
-        assert_eq!(tokens, vec![Eof]);
+    macro_rules! error_test {
+        (
+            name:  $name:ident,
+            text:  $text:expr,
+            error: $expected:expr,
+        ) => {
+            #[test]
+            fn $name() {
+                let text = $text;
+                let expected = $expected;
+                let lexer = Lexer::new(text);
+                let error = lexer.lex().unwrap_err();
+                assert_eq!(error, expected);
+            }
+        }
     }
 
-    #[test]
-    fn illegal_char() {
-        let lexer = Lexer::new("😎");
-        let error = lexer.lex().unwrap_err();
-        assert_eq!(error, Error::UnexpectedStartOfToken('😎'));
+    token_test! {
+        name: empty_string,
+        text: "",
+        token: [],
+    }
+
+    error_test! {
+        name: illegal_char,
+        text: "😎",
+        error: Error::UnexpectedStartOfToken('😎'),
     }
 
     token_test! {
@@ -276,138 +290,118 @@ mod test {
 }
     */
 
-    #[test]
-    fn decimal_integer() {
-        let lexer = Lexer::new("1234");
-        let tokens = lexer.lex().unwrap();
-        assert_eq!(tokens, vec![Integer(1234), Eof]);
+    token_test! {
+        name: decimal_integer,
+        text: "1234",
+        token: [Integer(1234)],
     }
 
-    #[test]
-    fn comment() {
-        let lexer = Lexer::new("#this is a comment");
-        let tokens = lexer.lex().unwrap();
-        assert_eq!(tokens, vec![Eof]);
+    token_test! {
+        name: comment,
+        text: "# this is a comment",
+        token: [],
     }
 
-    #[test]
-    fn newline() {
-        let lexer = Lexer::new("\n");
-        let tokens = lexer.lex().unwrap();
-        assert_eq!(tokens, vec![Newline, Eof]);
+    token_test! {
+        name: newline,
+        text: "\n",
+        token: [Newline],
     }
 
-    #[test]
-    fn escaped_newline() {
-        let lexer = Lexer::new("\\\n");
-        let tokens = lexer.lex().unwrap();
-        assert_eq!(tokens, vec![Eof]);
+    token_test! {
+        name: escaped_newline,
+        text: "\\\n",
+        token: [],
     }
 
-    #[test]
-    fn escaped_newline_fail() {
-        let lexer = Lexer::new("\\h");
-        let error = lexer.lex().unwrap_err();
-        assert_eq!(error, Error::UnpairedBackslash(Some('h')));
+    error_test! {
+        name: escaped_newline_fail,
+        text: "\\h",
+        error: Error::UnpairedBackslash(Some('h')),
     }
 
-    #[test]
-    fn blank_line() {
-        let lexer = Lexer::new("  ");
-        let tokens = lexer.lex().unwrap();
-        assert_eq!(tokens, vec![Eof]);
+    token_test! {
+        name: blank_line,
+        text: "  ",
+        token: [],
     }
 
-    #[test]
-    fn indent() {
-        let lexer = Lexer::new("  39");
-        let tokens = lexer.lex().unwrap();
-        assert_eq!(tokens, vec![Indent, Integer(39), Dedent, Eof]);
+    token_test! {
+        name: indent,
+        text: "   39",
+        token: [Indent, Integer(39), Dedent],
     }
 
-    #[test]
-    fn blank_line_comments() {
-        let lexer = Lexer::new("  #this is a comment");
-        let tokens = lexer.lex().unwrap();
-        assert_eq!(tokens, vec![Eof]);
+    token_test! {
+        name: blank_line_comments,
+        text: "   #this is a comment",
+        token: [],
     }
 
-    #[test]
-    fn dedent() {
-        let lexer = Lexer::new("  39\nhmm");
-        let tokens = lexer.lex().unwrap();
-        assert_eq!(tokens, vec![Indent, Integer(39), Newline, Dedent, Identifier("hmm".into()), Eof]);
+    token_test! {
+        name: dedent,
+        text: "  39\nhmm",
+        token: [Indent, Integer(39), Newline, Dedent, Identifier("hmm".into())],
     }
 
-    #[test]
-    fn multiple_indent() {
-        let lexer = Lexer::new("  39\n   hmm\n  1");
-        let tokens = lexer.lex().unwrap();
-        assert_eq!(tokens, vec![Indent, Integer(39), Newline, Indent, Identifier("hmm".into()),
-            Newline, Dedent, Integer(1), Dedent, Eof]);
+    token_test! {
+        name: multiple_indent,
+        text: "  39\n   hmm\n  1",
+        token: [Indent, Integer(39), Newline, Indent, Identifier("hmm".into()), Newline, Dedent, Integer(1), Dedent],
     }
 
-    #[test]
-    fn illegal_indent() {
-        let lexer = Lexer::new("  39\n   hmm\n 1");
-        let tokens = lexer.lex().unwrap_err();
-        assert_eq!(tokens, Error::UnmatchedIndentationLevel(1));
+    error_test! {
+        name: illegal_indent,
+        text: "  39\n   hmm\n 1",
+        error: Error::UnmatchedIndentationLevel(1),
     }
 
-    #[test]
-    fn print() {
-        let lexer = Lexer::new("print");
-        let tokens = lexer.lex().unwrap();
-        assert_eq!(tokens, vec![Print, Eof]);
+    token_test! {
+        name: print,
+        text: "print",
+        token: [Print],
     }
 
-    #[test]
-    fn def() {
-        let lexer = Lexer::new("def");
-        let tokens = lexer.lex().unwrap();
-        assert_eq!(tokens, vec![Def, Eof]);
+    token_test! {
+        name: def,
+        text: "def",
+        token: [Def],
     }
 
-    #[test]
-    fn elif() {
-        let lexer = Lexer::new("elif");
-        let tokens = lexer.lex().unwrap();
-        assert_eq!(tokens, vec![Elif, Eof]);
+    token_test! {
+        name: elif,
+        text: "elif",
+        token: [Elif],
     }
 
-    #[test]
-    fn else_token() {
-        let lexer = Lexer::new("else");
-        let tokens = lexer.lex().unwrap();
-        assert_eq!(tokens, vec![Else, Eof]);
+    token_test! {
+        name: else_token,
+        text: "else",
+        token: [Else],
     }
 
-    #[test]
-    fn parenl() {
-        let lexer = Lexer::new("(");
-        let tokens = lexer.lex().unwrap();
-        assert_eq!(tokens, vec![ParenL, Eof]);
+    token_test! {
+        name: parenl,
+        text: "(",
+        token: [ParenL],
     }
 
-    #[test]
-    fn parenr() {
-        let lexer = Lexer::new(")");
-        let tokens = lexer.lex().unwrap();
-        assert_eq!(tokens, vec![ParenR, Eof]);
+    token_test! {
+        name: parenr,
+        text: ")",
+        token: [ParenR],
     }
 
-    #[test]
-    fn return_token() {
-        let lexer = Lexer::new("return");
-        let tokens = lexer.lex().unwrap();
-        assert_eq!(tokens, vec![Return, Eof]);
+    token_test! {
+        name: return_token,
+        text: "return",
+        token: [Return],
     }
 
-    #[test]
-    fn colon() {
-        let lexer = Lexer::new(":");
-        let tokens = lexer.lex().unwrap();
-        assert_eq!(tokens, vec![Colon, Eof]);
+    token_test! {
+        name: colon,
+        text: ":",
+        token: [Colon],
     }
 
     token_test! {
@@ -426,23 +420,6 @@ mod test {
         name: eqeq,
         text: "==",
         token: [EqEq],
-    }
-
-    macro_rules! error_test {
-        (
-            name:  $name:ident,
-            text:  $text:expr,
-            error: $expected:expr,
-        ) => {
-            #[test]
-            fn $name() {
-                let text = $text;
-                let expected = $expected;
-                let lexer = Lexer::new(text);
-                let error = lexer.lex().unwrap_err();
-                assert_eq!(error, expected);
-            }
-        }
     }
 
     error_test! {

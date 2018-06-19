@@ -87,6 +87,22 @@ mod test {
     use super::*;
     use lexer::Lexer;
 
+    macro_rules! test {
+        (
+            name:       $name:ident,
+            text:       $text:expr,
+            program:    $expected:expr,
+        ) => {
+            #[test]
+            fn $name() {
+                let text = $text;
+                let expected = $expected.to_vec();
+                let program = parse(text).unwrap();
+                assert_eq!(program.statements, expected);
+            }
+        }
+    }
+
     fn lex(text: &str) -> Vec<Token> {
         let lexer = Lexer::new(text);
         lexer.lex().unwrap()
@@ -97,29 +113,40 @@ mod test {
         parser.parse_program()
     }
 
-    #[test]
-    fn empty_program() {
-        let program = parse(" ").unwrap();
-        assert_eq!(program.statements, vec![]);
-        // assert_eq!(program, Program{statements: vec![]})
+    test! {
+        name: empty_program,
+        text: " ",
+        program: [],
     }
 
-    #[test]
-    fn print_integer() {
-        let program = parse("print 7").unwrap();
-        assert_eq!(program.statements, vec![Statement::Print(Expression::Simple(Value::Integer(7)))]);
+    test! {
+        name: print_integer,
+        text: "print 7",
+        program: [Statement::Print(
+            Expression::Simple(
+                Value::Integer(7)
+            )
+        )],
     }
 
-    #[test]
-    fn print_variable() {
-        let program = parse("print name").unwrap();
-        assert_eq!(program.statements, vec![Statement::Print(Expression::Simple(Value::Variable("name".to_owned())))]);
+    test! {
+        name:    print_variable,
+        text:    "print name",
+        program: [
+            Statement::Print(
+                Expression::Simple(
+                    Value::Variable(
+                        "name".to_owned()
+                    )
+                )
+            )
+        ],
     }
 
-    #[test]
-    fn print_add() {
-        let program = parse("print 1 + 1").unwrap();
-        assert_eq!(program.statements, vec![
+    test! {
+        name:    print_add,
+        text:    "print 1 + 1",
+        program: [
             Statement::Print(
                 Expression::Add(
                     Value::Integer(1),
@@ -128,13 +155,13 @@ mod test {
                     ))
                 )
             )
-        ]);
+        ],
     }
 
-    #[test]
-    fn print_sub() {
-        let program = parse("print 2- 1").unwrap();
-        assert_eq!(program.statements, vec![
+    test! {
+        name:    print_sub,
+        text:    "print 2- 1",
+        program: [
             Statement::Print(
                 Expression::Sub(
                     Value::Integer(2),
@@ -143,21 +170,6 @@ mod test {
                     ))
                 )
             )
-        ]);
-    }
-
-
-    macro_rules! test {
-        () => {
-
-        }
-    }
-
-    test! {
-       //  name:    print_variable,
-       //  text:    "print name",
-       //  program: Program{statements: vec![
-       //      Statement::Print(Expression::Simple(Value::Variable("name".to_owned())))
-       // ]},
+        ],
     }
 }
