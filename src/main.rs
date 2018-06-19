@@ -5,6 +5,8 @@ mod lexer;
 mod token;
 mod error;
 mod parser;
+mod program;
+mod codegen;
 
 use std::path::PathBuf;
 use structopt::StructOpt;

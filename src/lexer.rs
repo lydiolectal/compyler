@@ -221,6 +221,25 @@ mod test {
     use token::Token::*;
     use error::Error::*;
 
+    // TODO: rewrite macro to take in vec for token, then extend that vec by Eof token
+    macro_rules! token_test {
+        (
+            name:  $name:ident,
+            text:  $text:expr,
+            token: $expected:expr,
+        ) => {
+            #[test]
+            fn $name() {
+                let text = $text;
+                let mut expected = $expected.to_vec();
+                let lexer = Lexer::new(text);
+                let tokens = lexer.lex().unwrap();
+                expected.push(Eof);
+                assert_eq!(tokens, expected);
+            }
+        }
+    }
+
     #[test]
     fn empty_string() {
         let lexer  = Lexer::new("");
@@ -235,19 +254,27 @@ mod test {
         assert_eq!(error, Error::UnexpectedStartOfToken('😎'));
     }
 
-    #[test]
-    fn lowercase_identifier() {
-        let lexer = Lexer::new("hi");
-        let tokens = lexer.lex().unwrap();
-        assert_eq!(tokens, vec![Identifier("hi".to_owned()), Eof]);
+    token_test! {
+        name: lowercase_identifier,
+        text: "hi",
+        token: [Identifier("hi".to_owned())],
     }
 
-    #[test]
-    fn if_keyword() {
-        let lexer = Lexer::new("if");
-        let tokens = lexer.lex().unwrap();
-        assert_eq!(tokens, vec![If, Eof]);
+    token_test! {
+        name: if_keyword,
+        text: "if",
+        token: [If],
     }
+
+    /*
+    vec:     Vec::new(), vec![a,b,c]
+    arrays:  [1,2,3] (size is part of the type)
+    slices:  &[1,2,3]
+
+    fn foo(a: [u8; 4]) {
+
+}
+    */
 
     #[test]
     fn decimal_integer() {
@@ -383,47 +410,22 @@ mod test {
         assert_eq!(tokens, vec![Colon, Eof]);
     }
 
-    #[test]
-    fn eqeq() {
-        let lexer = Lexer::new("==");
-        let tokens = lexer.lex().unwrap();
-        assert_eq!(tokens, vec![EqEq, Eof]);
-    }
-
-    #[test]
-    fn eqeq_error() {
-        let lexer = Lexer::new("=");
-        let error = lexer.lex().unwrap_err();
-        assert_eq!(error, Error::UnexpectedCharacter(None));
-    }
-
-    macro_rules! token_test {
-        (
-            name:  $name:ident,
-            text:  $text:expr,
-            token: $expected:expr,
-        ) => {
-            #[test]
-            fn $name() {
-                let text = $text;
-                let expected = $expected;
-                let lexer = Lexer::new(text);
-                let tokens = lexer.lex().unwrap();
-                assert_eq!(tokens, vec![expected, Eof]);
-            }
-        }
-    }
-
     token_test! {
         name:  minus,
         text:  "-",
-        token: Minus,
+        token: [Minus],
     }
 
     token_test! {
         name:  plus,
         text:  "+",
-        token: Plus,
+        token: [Plus],
+    }
+
+    token_test! {
+        name: eqeq,
+        text: "==",
+        token: [EqEq],
     }
 
     macro_rules! error_test {
@@ -444,7 +446,7 @@ mod test {
     }
 
     error_test! {
-        name:  eqeq_error_again,
+        name:  eqeq_error,
         text:  "=",
         error: UnexpectedCharacter(None),
     }

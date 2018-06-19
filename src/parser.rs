@@ -1,32 +1,11 @@
 // brings Token and variants of Token into scope
 use token::Token::{self, *};
 use error::Error;
+use program::*;
 
 pub struct Parser {
     tokens: Vec<Token>,
     current: Token,
-}
-
-pub struct Program {
-    statements: Vec<Statement>,
-}
-
-#[derive(Debug, PartialEq)]
-pub enum Statement {
-    Print(Expression),
-    SimpleAssignment(String, Expression),
-}
-
-#[derive(Debug, PartialEq)]
-pub enum Expression {
-    Simple(Value),
-    // Addition(Value, Expression),
-}
-
-#[derive(Debug, PartialEq)]
-pub enum Value {
-    Integer(u32),
-    Variable(String),
 }
 
 impl Parser {
@@ -71,10 +50,20 @@ impl Parser {
     }
 
     fn parse_expression(&mut self) -> Result<Expression, Error> {
-        // match self.current {
-        //
-        // }
-        Ok(Expression::Simple(self.parse_value()?))
+        let v = self.parse_value()?;
+        match self.current {
+            Plus => {
+                self.next();
+                let e = self.parse_expression()?;
+                Ok(Expression::Add(v, Box::new(e)))
+            }
+            Minus => {
+                self.next();
+                let e = self.parse_expression()?;
+                Ok(Expression::Sub(v, Box::new(e)))
+            }
+            _ => Ok(Expression::Simple(v)),
+        }
     }
 
     fn parse_value(&mut self) -> Result<Value, Error> {
@@ -127,6 +116,37 @@ mod test {
         assert_eq!(program.statements, vec![Statement::Print(Expression::Simple(Value::Variable("name".to_owned())))]);
     }
 
+    #[test]
+    fn print_add() {
+        let program = parse("print 1 + 1").unwrap();
+        assert_eq!(program.statements, vec![
+            Statement::Print(
+                Expression::Add(
+                    Value::Integer(1),
+                    Box::new(Expression::Simple(
+                        Value::Integer(1)
+                    ))
+                )
+            )
+        ]);
+    }
+
+    #[test]
+    fn print_sub() {
+        let program = parse("print 2- 1").unwrap();
+        assert_eq!(program.statements, vec![
+            Statement::Print(
+                Expression::Sub(
+                    Value::Integer(2),
+                    Box::new(Expression::Simple(
+                        Value::Integer(1)
+                    ))
+                )
+            )
+        ]);
+    }
+
+
     macro_rules! test {
         () => {
 
@@ -134,10 +154,10 @@ mod test {
     }
 
     test! {
-        name:    print_variable,
-        text:    "print name",
-        program: Program{statements: vec![
-            Statement::Print(Expression::Simple(Value::Variable("name".to_owned())))
-       ]},
+       //  name:    print_variable,
+       //  text:    "print name",
+       //  program: Program{statements: vec![
+       //      Statement::Print(Expression::Simple(Value::Variable("name".to_owned())))
+       // ]},
     }
 }
