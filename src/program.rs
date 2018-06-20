@@ -23,14 +23,9 @@ pub enum Statement {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Expression {
-    EqEq(Term, Term),
-    Simple(Term),
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum Term {
-    Add(Value, Box<Term>),
-    Sub(Value, Box<Term>),
+    EqEq(Box<Expression>, Box<Expression>),
+    Add(Value, Box<Expression>),
+    Sub(Value, Box<Expression>),
     Simple(Value),
 }
 

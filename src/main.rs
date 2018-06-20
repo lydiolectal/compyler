@@ -7,6 +7,7 @@ mod error;
 mod parser;
 mod program;
 mod codegen;
+mod wexp;
 
 use std::path::PathBuf;
 use structopt::StructOpt;
