@@ -252,7 +252,7 @@ mod test {
 
     test! {
         name:    return_complex_eqeq,
-        text:    "return 0 + 1 == 1",
+        text:    "retur 0 + 1 == 1",
         program: [
             Statement::Return(
                 Expression::EqEq(
