@@ -6,7 +6,7 @@ pub enum Token {
     Else,  // 4
     Print,
     Def,    // 3
-    Return, // 2
+    Return,
     Integer(u32),
     Newline,
     Indent,
@@ -15,7 +15,7 @@ pub enum Token {
     ParenL,
     ParenR,
     Colon,
-    EqEq,   // 1
+    EqEq,
     Plus,
     Minus,
 }

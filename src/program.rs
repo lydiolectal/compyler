@@ -12,6 +12,7 @@ pub struct Program {
 #[derive(Debug, PartialEq, Clone)]
 pub enum Statement {
     Print(Expression),
+    Return(Expression),
     // If {
     //     condition: Expression,
     //     body: Body,

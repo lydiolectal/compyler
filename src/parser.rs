@@ -45,6 +45,10 @@ impl Parser {
                 self.next();
                 Ok(Statement::Print(self.parse_expression()?))
             }
+            Return => {
+                self.next();
+                Ok(Statement::Return(self.parse_expression()?))
+            }
             _ => Err(Error::UnexpectedToken(self.current.clone())),
         }
     }
@@ -203,6 +207,62 @@ mod test {
                 Expression::EqEq(
                     Term::Simple(
                         Value::Integer(0)),
+                    Term::Simple(
+                        Value::Integer(1)
+                    )
+                )
+            )
+        ],
+    }
+
+    test! {
+        name:    print_complex_eqeq,
+        text:    "print 0 + 1 == 1",
+        program: [
+            Statement::Print(
+                Expression::EqEq(
+                    Term::Add(
+                        Value::Integer(0),
+                        Box::new(Term::Simple(
+                            Value::Integer(1)
+                            )
+                        )
+                    ),
+                    Term::Simple(
+                        Value::Integer(1)
+                    )
+                )
+            )
+        ],
+    }
+
+    test! {
+        name: parse_return,
+        text: "return 9",
+        program: [
+            Statement::Return(
+                Expression::Simple(
+                    Term::Simple(
+                        Value::Integer(9)
+                    )
+                )
+            )
+        ],
+    }
+
+    test! {
+        name:    return_complex_eqeq,
+        text:    "return 0 + 1 == 1",
+        program: [
+            Statement::Return(
+                Expression::EqEq(
+                    Term::Add(
+                        Value::Integer(0),
+                        Box::new(Term::Simple(
+                            Value::Integer(1)
+                            )
+                        )
+                    ),
                     Term::Simple(
                         Value::Integer(1)
                     )
