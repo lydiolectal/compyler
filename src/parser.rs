@@ -50,19 +50,31 @@ impl Parser {
     }
 
     fn parse_expression(&mut self) -> Result<Expression, Error> {
+        let t = self.parse_term()?;
+        match self.current {
+            EqEq => {
+                self.next();
+                let e = self.parse_term()?;
+                Ok(Expression::EqEq(t, e))
+            }
+            _ => Ok(Expression::Simple(t))
+        }
+    }
+
+    fn parse_term(&mut self) -> Result<Term, Error> {
         let v = self.parse_value()?;
         match self.current {
             Plus => {
                 self.next();
-                let e = self.parse_expression()?;
-                Ok(Expression::Add(v, Box::new(e)))
+                let e = self.parse_term()?;
+                Ok(Term::Add(v, Box::new(e)))
             }
             Minus => {
                 self.next();
-                let e = self.parse_expression()?;
-                Ok(Expression::Sub(v, Box::new(e)))
+                let e = self.parse_term()?;
+                Ok(Term::Sub(v, Box::new(e)))
             }
-            _ => Ok(Expression::Simple(v)),
+            _ => Ok(Term::Simple(v)),
         }
     }
 
@@ -124,7 +136,9 @@ mod test {
         text: "print 7",
         program: [Statement::Print(
             Expression::Simple(
-                Value::Integer(7)
+                Term::Simple(
+                    Value::Integer(7))
+
             )
         )],
     }
@@ -135,8 +149,10 @@ mod test {
         program: [
             Statement::Print(
                 Expression::Simple(
-                    Value::Variable(
+                    Term::Simple(
+                        Value::Variable(
                         "name".to_owned()
+                        )
                     )
                 )
             )
@@ -148,11 +164,14 @@ mod test {
         text:    "print 1 + 1",
         program: [
             Statement::Print(
-                Expression::Add(
-                    Value::Integer(1),
-                    Box::new(Expression::Simple(
-                        Value::Integer(1)
-                    ))
+                Expression::Simple(
+                    Term::Add(
+                        Value::Integer(1),
+                        Box::new(Term::Simple(
+                            Value::Integer(1)
+                            )
+                        )
+                    )
                 )
             )
         ],
@@ -163,11 +182,30 @@ mod test {
         text:    "print 2- 1",
         program: [
             Statement::Print(
-                Expression::Sub(
-                    Value::Integer(2),
-                    Box::new(Expression::Simple(
+                Expression::Simple(
+                    Term::Sub(
+                        Value::Integer(2),
+                        Box::new(Term::Simple(
+                            Value::Integer(1)
+                            )
+                        )
+                    )
+                )
+            )
+        ],
+    }
+
+    test! {
+        name:    print_eqeq,
+        text:    "print 0 == 1",
+        program: [
+            Statement::Print(
+                Expression::EqEq(
+                    Term::Simple(
+                        Value::Integer(0)),
+                    Term::Simple(
                         Value::Integer(1)
-                    ))
+                    )
                 )
             )
         ],
