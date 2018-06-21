@@ -1,5 +1,5 @@
-#[macro_use]
-extern crate structopt;
+#[cfg(test)]
+extern crate tempfile;
 
 mod lexer;
 mod token;
@@ -8,26 +8,14 @@ mod parser;
 mod program;
 mod codegen;
 mod wexp;
+mod compile;
 
-use std::path::PathBuf;
-use structopt::StructOpt;
-use std::fs;
-use lexer::Lexer;
-
-#[derive(Debug, StructOpt)]
-#[structopt(name = "compyler", about = "The Compyler compiler.")]
-struct Opt {
-    /// Input file
-    #[structopt(parse(from_os_str))]
-    input: PathBuf,
-}
+use std::io::{stdin, Read};
 
 fn main() {
-    let opt = Opt::from_args();
-    let text = fs::read_to_string(opt.input)
-        .expect("Failed to read input.");
-    let lexer = Lexer::new(&text);
-    let tokens = lexer.lex()
-        .expect("Failed to lex input.");
-    println!("{:?}", tokens);
+    let mut text = String::new();
+    stdin().read_to_string(&mut text).expect("Failed to read input.");
+    let wexp = compile::compile(&text)
+        .expect("Compilation failed.");
+    println!("{}", wexp);
 }

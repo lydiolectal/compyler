@@ -26,7 +26,7 @@ macro_rules! wasm {
 }
 
 impl Program {
-    fn codegen(&self) -> Wexp {
+    pub fn codegen(&self) -> Wexp {
         let mut module = vec![wasm!(module)];
         // for loop that adds statements to module vec
         module.push(List(vec![wasm!(func), List(vec![wasm!(export), wasm!("\"main\"")])]));
