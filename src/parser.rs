@@ -1,4 +1,3 @@
-// brings Token and variants of Token into scope
 use token::Token::{self, *};
 use error::Error;
 use program::*;
@@ -190,75 +189,77 @@ mod test {
         ],
     }
 
-    // test! {
-    //     name:    print_eqeq,
-    //     text:    "print 0 == 1",
-    //     program: [
-    //         Statement::Print(
-    //             Expression::EqEq(
-    //                 Term::Simple(
-    //                     Value::Integer(0)),
-    //                 Term::Simple(
-    //                     Value::Integer(1)
-    //                 )
-    //             )
-    //         )
-    //     ],
-    // }
-    //
-    // test! {
-    //     name:    print_complex_eqeq,
-    //     text:    "print 0 + 1 == 1",
-    //     program: [
-    //         Statement::Print(
-    //             Expression::EqEq(
-    //                 Term::Add(
-    //                     Value::Integer(0),
-    //                     Box::new(Term::Simple(
-    //                         Value::Integer(1)
-    //                         )
-    //                     )
-    //                 ),
-    //                 Term::Simple(
-    //                     Value::Integer(1)
-    //                 )
-    //             )
-    //         )
-    //     ],
-    // }
-    //
-    // test! {
-    //     name: parse_return,
-    //     text: "return 9",
-    //     program: [
-    //         Statement::Return(
-    //             Expression::Simple(
-    //                 Term::Simple(
-    //                     Value::Integer(9)
-    //                 )
-    //             )
-    //         )
-    //     ],
-    // }
-    //
-    // test! {
-    //     name:    return_complex_eqeq,
-    //     text:    "retur 0 + 1 == 1",
-    //     program: [
-    //         Statement::Return(
-    //             Expression::EqEq(
-    //                 Term::Add(
-    //                     Value::Integer(0),
-    //                     Box::new(Term::Simple(
-    //                         Value::Integer(1)
-    //                         )
-    //                     )
-    //                 ),
-    //                 Term::Simple(
-    //                     Value::Integer(1)
-    //                 )
-    //             )
-    //         )
-    //     ],
-    // }
+    test! {
+        name:    print_eqeq,
+        text:    "print 0 == 1",
+        program: [
+            Statement::Print(
+                Expression::EqEq(
+                    Box::new(Expression::Simple(
+                        Value::Integer(0))
+                    ),
+                    Box::new(Expression::Simple(
+                        Value::Integer(1))
+                    )
+                )
+            )
+        ],
+    }
+
+    test! {
+        name:    print_complex_eqeq,
+        text:    "print 0 + 1 == 1",
+        program: [
+            Statement::Print(
+                Expression::EqEq(
+                    Box::new(Expression::Add(
+                        Value::Integer(0),
+                        Box::new(Expression::Simple(
+                            Value::Integer(1)
+                        ))
+                    )),
+                    Box::new(Expression::Simple(
+                        Value::Integer(1)
+                    ))
+                )
+            )
+        ],
+    }
+
+    test! {
+        name: parse_return,
+        text: "return 9",
+        program: [
+            Statement::Return(
+                Expression::Simple(
+                    Value::Integer(9)
+                )
+            )
+        ],
+    }
+
+    test! {
+        name:    return_complex_eqeq,
+        text:    "return 0 + 1 == 1",
+        program: [
+            Statement::Return(
+                Expression::EqEq(
+                    Box::new(
+                        Expression::Add(
+                            Value::Integer(0),
+                            Box::new(Expression::Simple(
+                                Value::Integer(1)
+                                )
+                            )
+                        )
+                    ),
+                    Box::new(
+                        Expression::Simple(
+                            Value::Integer(1)
+                        )
+                    )
+                )
+            )
+        ],
+    }
 }

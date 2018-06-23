@@ -91,4 +91,10 @@ mod test {
         input:  "",
         output: "",
     }
+
+    // test! {
+    //     name:   print_int,
+    //     input:  "",
+    //     output:
+    // }
 }
