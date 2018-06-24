@@ -6,7 +6,7 @@ var importObject = {
 
 async function load() {
   console.log('fetching main.wasm...');
-  let response = await fetch('main.wasm');
+  let response = await fetch('main_js.wasm');
 
   console.log('getting wasm bytes...');
   let bytes = await response.arrayBuffer();

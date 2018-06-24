@@ -53,7 +53,6 @@ impl Statement {
         match self {
             Statement::Print(e) => {
                 let expr = e.codegen();
-                atoms.push(Atom("i32.const".to_owned()));
                 atoms.extend(expr);
                 atoms.extend(vec![wasm!(call), Atom("$i".to_owned())]);
             }
@@ -72,7 +71,10 @@ impl Expression {
         match self {
             Expression::Simple(v) => {
                 let val = v.codegen();
-                atoms.push(val);
+                atoms.extend(val);
+            }
+            Expression::Add(v, e) => {
+                //
             }
             _         => {
 
@@ -83,15 +85,18 @@ impl Expression {
 }
 
 impl Value {
-    pub fn codegen(&self) -> Wexp {
+    pub fn codegen(&self) -> Vec<Wexp> {
+        let mut atoms = vec![];
         match self {
             Value::Integer(i)  => {
-                Atom(i.to_string())
+                atoms.push(Atom("i32.const".to_owned()));
+                atoms.push(Atom(i.to_string()));
             }
             Value::Variable(v) => {
-                Atom(v.to_string())
+                Atom(v.to_string());
             }
         }
+        atoms
     }
 }
 
@@ -120,7 +125,8 @@ mod test {
         };
         let wexp = p.codegen();
         assert_eq!(wexp.to_string(),
-        "(module (func $i (import \"host\" \"print\") (param i32)) (func (export \"main\") i32.const 24 call $i))")
+        "(module (func $i (import \"host\" \"print\") \
+        (param i32)) (func (export \"main\") i32.const 24 call $i))")
 
         /*
         (module

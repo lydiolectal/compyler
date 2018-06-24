@@ -88,8 +88,14 @@ mod test {
 
     test! {
         name:   empty,
-        input:  "",
-        output: "",
+        input:  r#"
+print 1
+if True:
+    print 7.0
+else:
+    print 8
+"#,
+        output: [[1i32], [7f32],
     }
 
     // test! {
