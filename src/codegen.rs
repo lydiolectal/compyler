@@ -74,12 +74,18 @@ impl Expression {
                 atoms.extend(val);
             }
             Expression::Add(v, ref e) => {
-                // TODO: fix this grodiness
                 let val = v.codegen();
                 let expr = e.codegen();
                 atoms.extend(val);
                 atoms.extend(expr);
                 atoms.push(Atom("i32.add".to_owned()));
+            }
+            Expression::Sub(v, ref e) => {
+                let val = v.codegen();
+                let expr = e.codegen();
+                atoms.extend(val);
+                atoms.extend(expr);
+                atoms.push(Atom("i32.sub".to_owned()));
             }
             _         => {
 
@@ -155,7 +161,58 @@ mod test {
         i32.add \
         call $i\
         ))");
+    }
 
+    #[test]
+    fn test_sub_int() {
+        let p = Program {
+            statements: vec![Statement::Print(
+                Expression::Sub(
+                    Value::Integer(2),
+                    Box::new(
+                        Expression::Simple(
+                            Value::Integer(1)))
+                )
+            )]
+        };
+        let wexp = p.codegen();
+        assert_eq!(wexp.to_string(),
+        "(module \
+        (func $i (import \"host\" \"print\") (param i32)) \
+        (func (export \"main\") \
+        i32.const 2 \
+        i32.const 1 \
+        i32.sub \
+        call $i\
+        ))");
+    }
+
+    #[test]
+    fn test_add_and_sub_int() {
+        let p = Program {
+            statements: vec![Statement::Print(
+                Expression::Add(
+                    Value::Integer(2),
+                    Box::new(Expression::Sub(
+                        Value::Integer(2),
+                        Box::new(Expression::Simple(
+                            Value::Integer(3)
+                        ))
+                    ))
+                )
+            )]
+        };
+        let wexp = p.codegen();
+        assert_eq!(wexp.to_string(),
+        "(module \
+        (func $i (import \"host\" \"print\") (param i32)) \
+        (func (export \"main\") \
+        i32.const 2 \
+        i32.const 2 \
+        i32.const 3 \
+        i32.sub \
+        i32.add \
+        call $i))");
     }
         /*
         (module
