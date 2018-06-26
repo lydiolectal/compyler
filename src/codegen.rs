@@ -7,22 +7,6 @@ macro_rules! wasm {
         let s: &str = $s;
         ::wexp::Wexp::Atom(s.to_string())
     }}
-    /*
-    (
-        (
-            $($item:expr)*
-        )
-    ) => {{
-        let mut v = Vec::new();
-        $(
-        {
-            let i = wasm!($item);
-            v.push(i);
-        }
-        )*
-        ::exp::Wexp::List(v);
-    }}
-    */
 }
 
 impl Program {

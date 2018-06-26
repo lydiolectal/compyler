@@ -1,5 +1,10 @@
 #[cfg(test)]
 extern crate tempfile;
+#[cfg(test)]
+extern crate regex;
+#[cfg(test)]
+#[macro_use]
+extern crate lazy_static;
 
 mod lexer;
 mod token;
