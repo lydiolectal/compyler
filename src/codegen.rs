@@ -73,8 +73,13 @@ impl Expression {
                 let val = v.codegen();
                 atoms.extend(val);
             }
-            Expression::Add(v, e) => {
-                //
+            Expression::Add(v, ref e) => {
+                // TODO: fix this grodiness
+                let val = v.codegen();
+                let expr = e.codegen();
+                atoms.extend(val);
+                atoms.extend(expr);
+                atoms.push(Atom("i32.add".to_owned()));
             }
             _         => {
 
@@ -102,7 +107,6 @@ impl Value {
 
 
 #[cfg(test)]
-
 mod test {
     use super::*;
 
@@ -126,8 +130,33 @@ mod test {
         let wexp = p.codegen();
         assert_eq!(wexp.to_string(),
         "(module (func $i (import \"host\" \"print\") \
-        (param i32)) (func (export \"main\") i32.const 24 call $i))")
+        (param i32)) (func (export \"main\") i32.const 24 call $i))");
+    }
 
+    #[test]
+    fn test_add_int() {
+        let p = Program {
+            statements: vec![Statement::Print(
+                Expression::Add(
+                    Value::Integer(1),
+                    Box::new(
+                        Expression::Simple(
+                            Value::Integer(2)))
+                )
+            )]
+        };
+        let wexp = p.codegen();
+        assert_eq!(wexp.to_string(),
+        "(module \
+        (func $i (import \"host\" \"print\") (param i32)) \
+        (func (export \"main\") \
+        i32.const 1 \
+        i32.const 2 \
+        i32.add \
+        call $i\
+        ))");
+
+    }
         /*
         (module
             (func $i
@@ -140,5 +169,4 @@ mod test {
                 call $i)
         )
         */
-    }
 }
