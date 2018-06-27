@@ -1,6 +1,6 @@
-use token::Token::{self, *};
 use error::Error;
 use program::*;
+use token::Token::{self, *};
 
 pub struct Parser {
     tokens: Vec<Token>,
@@ -10,10 +10,7 @@ pub struct Parser {
 impl Parser {
     pub fn new(mut tokens: Vec<Token>) -> Parser {
         let current = tokens.remove(0);
-        Parser {
-            tokens,
-            current,
-        }
+        Parser { tokens, current }
     }
 
     fn next(&mut self) {
@@ -24,6 +21,11 @@ impl Parser {
     }
 
     pub fn parse_program(mut self) -> Result<Program, Error> {
+        let body = self.parse_body()?;
+        Ok(Program { body })
+    }
+
+    fn parse_body(&mut self) -> Result<Body, Error> {
         let mut statements = Vec::new();
         loop {
             match self.current {
@@ -35,7 +37,7 @@ impl Parser {
         if !self.tokens.is_empty() {
             panic!("Did not consume token stream.");
         }
-        Ok(Program{statements})
+        Ok(Body { statements })
     }
 
     fn parse_statement(&mut self) -> Result<Statement, Error> {
@@ -48,8 +50,34 @@ impl Parser {
                 self.next();
                 Ok(Statement::Return(self.parse_expression()?))
             }
+            Def => self.parse_def(),
             _ => Err(Error::UnexpectedToken(self.current.clone())),
         }
+    }
+
+    fn parse_def(&mut self) -> Result<Statement, Error> {
+        self.next();
+
+        unimplemented!();
+
+        /*
+
+        struct Token {
+            kind:   TokenKind,
+            lexeme: String,
+        }
+        
+        let name_token = self.expect(TokenKind::Identifier)?;
+        let name_string = name_token.lexeme;
+
+
+
+        if let Token::Identifier(name) = self.current {
+
+        } else {
+            return Err(Error::UnexpectedToken(self.current.clone()));
+        }
+        */
     }
 
     fn parse_expression(&mut self) -> Result<Expression, Error> {
@@ -60,7 +88,7 @@ impl Parser {
                 let e = self.parse_term()?;
                 Ok(Expression::EqEq(Box::new(t), Box::new(e)))
             }
-            _ => Ok(t)
+            _ => Ok(t),
         }
     }
 
@@ -94,7 +122,6 @@ impl Parser {
             _ => Err(Error::UnexpectedToken(self.current.clone())),
         }
     }
-
 }
 
 #[cfg(test)]
@@ -103,19 +130,15 @@ mod test {
     use lexer::Lexer;
 
     macro_rules! test {
-        (
-            name:       $name:ident,
-            text:       $text:expr,
-            program:    $expected:expr,
-        ) => {
+        (name: $name:ident,text: $text:expr,program: $expected:expr,) => {
             #[test]
             fn $name() {
                 let text = $text;
                 let expected = $expected.to_vec();
                 let program = parse(text).unwrap();
-                assert_eq!(program.statements, expected);
+                assert_eq!(program.body.statements, expected);
             }
-        }
+        };
     }
 
     fn lex(text: &str) -> Vec<Token> {
@@ -262,6 +285,13 @@ mod test {
             )
         ],
     }
+
+    // test! {
+    //     name: def_simple_func,
+    //     text: "def fib():\n   print 0",
+    //     program:
+    //         [],
+    // }
 
     // add fib test
 }

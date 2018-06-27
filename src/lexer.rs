@@ -1,8 +1,8 @@
-use token::Token;
 use error::Error;
+use token::Token;
 
 pub struct Lexer {
-    chars:   Vec<char>,
+    chars: Vec<char>,
     current: Option<char>,
     column: u64,
     indent_stack: Vec<u64>,
@@ -97,11 +97,11 @@ impl Lexer {
                 '#' => self.lex_comment(),
                 '\n' => tokens.push(self.lex_newline()),
                 '\\' => self.lex_backslash()?,
-            // desugars into:
-            // '\\' => match self.lex_backslash() {
-            //     Err(error) => return Err(error.into()),
-            //     Ok(unit) => unit, // in this case, would be the unit value of the unit type ()
-            // }
+                // desugars into:
+                // '\\' => match self.lex_backslash() {
+                //     Err(error) => return Err(error.into()),
+                //     Ok(unit) => unit, // in this case, would be the unit value of the unit type ()
+                // }
                 // ' ' if self.column == 0 => tokens.push(self.lex_indent()),
                 ' ' => self.lex_whitespace(),
                 '(' => {
@@ -124,14 +124,14 @@ impl Lexer {
                     tokens.push(Token::Colon);
                     self.next();
                 }
-                 '=' => tokens.push(self.lex_equals()?),
+                '=' => tokens.push(self.lex_equals()?),
                 _ => return Err(Error::UnexpectedStartOfToken(c)),
             }
         }
 
         // - count number of indents on indent_stack
         // - add same # of dedent tokens to token vector. :)
-        for _ in 0..self.indent_stack.len()-1 {
+        for _ in 0..self.indent_stack.len() - 1 {
             tokens.push(Token::Dedent);
         }
         tokens.push(Token::Eof);
@@ -177,7 +177,7 @@ impl Lexer {
     fn lex_comment(&mut self) {
         while let Some(c) = self.current {
             if c == '\n' {
-                break
+                break;
             }
             self.next();
         }
@@ -200,8 +200,7 @@ impl Lexer {
     }
 
     fn lex_whitespace(&mut self) {
-        while self.next() == Some(' ') {
-        }
+        while self.next() == Some(' ') {}
     }
 
     fn lex_equals(&mut self) -> Result<Token, Error> {
@@ -211,22 +210,17 @@ impl Lexer {
         } else {
             Err(Error::UnexpectedCharacter(self.current))
         }
-
     }
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
-    use token::Token::*;
     use error::Error::*;
+    use token::Token::*;
 
     macro_rules! token_test {
-        (
-            name:  $name:ident,
-            text:  $text:expr,
-            token: $expected:expr,
-        ) => {
+        (name: $name:ident,text: $text:expr,token: $expected:expr,) => {
             #[test]
             fn $name() {
                 let text = $text;
@@ -236,15 +230,11 @@ mod test {
                 expected.push(Eof);
                 assert_eq!(tokens, expected);
             }
-        }
+        };
     }
 
     macro_rules! error_test {
-        (
-            name:  $name:ident,
-            text:  $text:expr,
-            error: $expected:expr,
-        ) => {
+        (name: $name:ident,text: $text:expr,error: $expected:expr,) => {
             #[test]
             fn $name() {
                 let text = $text;
@@ -253,7 +243,7 @@ mod test {
                 let error = lexer.lex().unwrap_err();
                 assert_eq!(error, expected);
             }
-        }
+        };
     }
 
     token_test! {

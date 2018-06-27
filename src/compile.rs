@@ -1,12 +1,11 @@
+use error::Error;
 use lexer::Lexer;
 use parser::Parser;
-use wexp::Wexp;
-use error::Error;
 use regex::Regex;
+use wexp::Wexp;
 
 lazy_static! {
-    static ref PRINT_RE: Regex = Regex::new(r"^called host host.print[(]([^)]*)[)] =>$")
-        .unwrap();
+    static ref PRINT_RE: Regex = Regex::new(r"^called host host.print[(]([^)]*)[)] =>$").unwrap();
 }
 
 pub fn compile(text: &str) -> Result<Wexp, Error> {
@@ -23,15 +22,13 @@ mod test {
 
     use tempfile::Builder;
 
-    use std::{fs, str};
     use std::process::Command;
+    use std::{fs, str};
 
     fn run(text: &str) -> Vec<String> {
         println!("compiling program: {}", text);
 
-        let wat = compile(text)
-            .expect("Compilation failed")
-            .to_string();
+        let wat = compile(text).expect("Compilation failed").to_string();
 
         println!("compiled wat: {}", wat);
 
@@ -41,8 +38,7 @@ mod test {
             .tempfile()
             .expect("Failed to create tempfile");
 
-        fs::write(&watfile, &wat)
-            .expect("Failed to write WAT.");
+        fs::write(&watfile, &wat).expect("Failed to write WAT.");
 
         let wasm = Builder::new()
             .prefix("compyler-test-wasm")
@@ -67,38 +63,41 @@ mod test {
             .expect("Failed to execute wasm-interp");
 
         if !wasm_interp_output.status.success() {
-            let stdout = str::from_utf8(&wasm_interp_output.stdout).unwrap().to_string();
-            let stderr = str::from_utf8(&wasm_interp_output.stderr).unwrap().to_string();
+            let stdout = str::from_utf8(&wasm_interp_output.stdout)
+                .unwrap()
+                .to_string();
+            let stderr = str::from_utf8(&wasm_interp_output.stderr)
+                .unwrap()
+                .to_string();
             println!("{}", stdout);
             println!("{}", stderr);
             panic!();
         }
 
-        let stdout = str::from_utf8(&wasm_interp_output.stdout)
-            .expect("wasm-interp output was not UTF-8");
+        let stdout =
+            str::from_utf8(&wasm_interp_output.stdout).expect("wasm-interp output was not UTF-8");
 
         println!("wasm-interp:  {:?}", stdout.trim());
 
-        stdout.lines().flat_map(|line| {
-            let captures = PRINT_RE.captures(line);
-            if let Some(captures) = captures {
-                return Some(captures[1].to_string());
-            }
+        stdout
+            .lines()
+            .flat_map(|line| {
+                let captures = PRINT_RE.captures(line);
+                if let Some(captures) = captures {
+                    return Some(captures[1].to_string());
+                }
 
-            if line != "main() => " {
-                return None;
-            }
+                if line != "main() => " {
+                    return None;
+                }
 
-            panic!("unexpected line in output: {}", line);
-        }).collect()
+                panic!("unexpected line in output: {}", line);
+            })
+            .collect()
     }
 
     macro_rules! test {
-        (
-            name:   $name:ident,
-            input:  $input:expr,
-            output: $output:expr,
-        ) => {
+        (name: $name:ident,input: $input:expr,output: $output:expr,) => {
             #[test]
             fn $name() {
                 let input = $input;
@@ -110,7 +109,7 @@ mod test {
                     panic!();
                 }
             }
-        }
+        };
     }
 
     // test! {

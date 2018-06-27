@@ -1,12 +1,13 @@
 // struct instance variables private by default
 pub struct Program {
-    pub statements: Vec<Statement>,
-    // pub body: Body,
+    //pub statements: Vec<Statement>,
+    pub body: Body,
 }
 
-// pub struct Body {
-//     pub statements: Vec<Statement>,
-// }
+#[derive(Debug, PartialEq, Clone)]
+pub struct Body {
+    pub statements: Vec<Statement>,
+}
 
 // enum variants and their fields public by default
 #[derive(Debug, PartialEq, Clone)]
@@ -19,6 +20,11 @@ pub enum Statement {
     //     elifs: Vec<(Expression, Body)>,
     //     else_body: Option<Body>,
     // },
+    Def {
+        name: String,
+        params: Vec<String>,
+        body: Body,
+    },
 }
 
 #[derive(Debug, PartialEq, Clone)]

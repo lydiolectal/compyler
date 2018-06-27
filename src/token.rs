@@ -1,11 +1,11 @@
 #[derive(Debug, PartialEq, Clone)]
 pub enum Token {
     Identifier(String),
-    If,    // 4 idk how to enforce that elif and else can only show up after 'if' block
-    Elif,  // 4
-    Else,  // 4
+    If,
+    Elif,
+    Else,
     Print,
-    Def,    // 3
+    Def,
     Return,
     Integer(u32),
     Newline,
