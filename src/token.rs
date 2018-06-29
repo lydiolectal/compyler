@@ -1,5 +1,5 @@
 #[derive(Debug, PartialEq, Clone)]
-pub enum Token {
+pub enum TokenKind {
     Identifier(String),
     If,
     Elif,
@@ -18,4 +18,9 @@ pub enum Token {
     EqEq,
     Plus,
     Minus,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Token {
+    pub kind: TokenKind,
 }

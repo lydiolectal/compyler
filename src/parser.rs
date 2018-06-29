@@ -1,6 +1,6 @@
 use error::Error;
 use program::*;
-use token::Token::{self, *};
+use token::{Token, TokenKind::{self, *}};
 
 pub struct Parser {
     tokens: Vec<Token>,
@@ -28,7 +28,7 @@ impl Parser {
     fn parse_body(&mut self) -> Result<Body, Error> {
         let mut statements = Vec::new();
         loop {
-            match self.current {
+            match self.current.kind {
                 Eof => break,
                 Newline => self.next(),
                 _ => statements.push(self.parse_statement()?),
@@ -41,7 +41,7 @@ impl Parser {
     }
 
     fn parse_statement(&mut self) -> Result<Statement, Error> {
-        match self.current {
+        match self.current.kind {
             Print => {
                 self.next();
                 Ok(Statement::Print(self.parse_expression()?))
@@ -66,7 +66,7 @@ impl Parser {
             kind:   TokenKind,
             lexeme: String,
         }
-        
+
         let name_token = self.expect(TokenKind::Identifier)?;
         let name_string = name_token.lexeme;
 
@@ -82,7 +82,7 @@ impl Parser {
 
     fn parse_expression(&mut self) -> Result<Expression, Error> {
         let t = self.parse_term()?;
-        match self.current {
+        match self.current.kind {
             EqEq => {
                 self.next();
                 let e = self.parse_term()?;
@@ -94,7 +94,7 @@ impl Parser {
 
     fn parse_term(&mut self) -> Result<Expression, Error> {
         let v = self.parse_value()?;
-        match self.current {
+        match self.current.kind {
             Plus => {
                 self.next();
                 let e = self.parse_term()?;
@@ -110,12 +110,16 @@ impl Parser {
     }
 
     fn parse_value(&mut self) -> Result<Value, Error> {
-        match self.current.clone() {
-            Integer(i) => {
+        match self.current {
+            Token {
+                kind: TokenKind::Integer(i),
+            } => {
                 self.next();
                 Ok(Value::Integer(i))
             }
-            Identifier(s) => {
+            Token {
+                kind: TokenKind::Identifier(s),
+            } => {
                 self.next();
                 Ok(Value::Variable(s))
             }

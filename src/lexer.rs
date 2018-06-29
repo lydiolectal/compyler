@@ -1,5 +1,5 @@
 use error::Error;
-use token::Token;
+use token::{Token, TokenKind};
 
 pub struct Lexer {
     chars: Vec<char>,
@@ -76,13 +76,17 @@ impl Lexer {
                 let cur_indentation = self.indent_stack.last().cloned().unwrap();
                 if self.column == cur_indentation {
                 } else if self.column > cur_indentation {
-                    tokens.push(Token::Indent);
+                    tokens.push(Token {
+                        kind: TokenKind::Indent,
+                    });
                     self.indent_stack.push(self.column);
                 } else if self.column < cur_indentation {
                     let mut indentation_level = self.indent_stack.pop().unwrap();
                     while indentation_level > self.column {
                         indentation_level = self.indent_stack.pop().unwrap();
-                        tokens.push(Token::Dedent);
+                        tokens.push(Token {
+                            kind: TokenKind::Dedent,
+                        });
                     }
                     self.indent_stack.push(indentation_level);
                     if indentation_level < self.column {
@@ -105,23 +109,33 @@ impl Lexer {
                 // ' ' if self.column == 0 => tokens.push(self.lex_indent()),
                 ' ' => self.lex_whitespace(),
                 '(' => {
-                    tokens.push(Token::ParenL);
+                    tokens.push(Token {
+                        kind: TokenKind::ParenL,
+                    });
                     self.next();
                 }
                 ')' => {
-                    tokens.push(Token::ParenR);
+                    tokens.push(Token {
+                        kind: TokenKind::ParenR,
+                    });
                     self.next();
                 }
                 '+' => {
-                    tokens.push(Token::Plus);
+                    tokens.push(Token {
+                        kind: TokenKind::Plus,
+                    });
                     self.next();
                 }
                 '-' => {
-                    tokens.push(Token::Minus);
+                    tokens.push(Token {
+                        kind: TokenKind::Minus,
+                    });
                     self.next();
                 }
                 ':' => {
-                    tokens.push(Token::Colon);
+                    tokens.push(Token {
+                        kind: TokenKind::Colon,
+                    });
                     self.next();
                 }
                 '=' => tokens.push(self.lex_equals()?),
@@ -132,9 +146,13 @@ impl Lexer {
         // - count number of indents on indent_stack
         // - add same # of dedent tokens to token vector. :)
         for _ in 0..self.indent_stack.len() - 1 {
-            tokens.push(Token::Dedent);
+            tokens.push(Token {
+                kind: TokenKind::Dedent,
+            });
         }
-        tokens.push(Token::Eof);
+        tokens.push(Token {
+            kind: TokenKind::Eof,
+        });
 
         Ok(tokens)
     }
@@ -150,13 +168,27 @@ impl Lexer {
         }
 
         match text.as_str() {
-            "if" => Token::If,
-            "elif" => Token::Elif,
-            "else" => Token::Else,
-            "print" => Token::Print,
-            "def" => Token::Def,
-            "return" => Token::Return,
-            _ => Token::Identifier(text),
+            "if" => Token {
+                kind: TokenKind::If,
+            },
+            "elif" => Token {
+                kind: TokenKind::Elif,
+            },
+            "else" => Token {
+                kind: TokenKind::Else,
+            },
+            "print" => Token {
+                kind: TokenKind::Print,
+            },
+            "def" => Token {
+                kind: TokenKind::Def,
+            },
+            "return" => Token {
+                kind: TokenKind::Return,
+            },
+            _ => Token {
+                kind: TokenKind::Identifier(text),
+            },
         }
     }
 
@@ -171,7 +203,9 @@ impl Lexer {
             }
             self.next();
         }
-        Token::Integer(integer)
+        Token {
+            kind: TokenKind::Integer(integer),
+        }
     }
 
     fn lex_comment(&mut self) {
@@ -187,7 +221,9 @@ impl Lexer {
         self.next();
         self.column = 0;
         self.seen_nonblank = false;
-        Token::Newline
+        Token {
+            kind: TokenKind::Newline,
+        }
     }
 
     fn lex_backslash(&mut self) -> Result<(), Error> {
@@ -206,7 +242,9 @@ impl Lexer {
     fn lex_equals(&mut self) -> Result<Token, Error> {
         if self.next() == Some('=') {
             self.next();
-            Ok(Token::EqEq)
+            Ok(Token {
+                kind: TokenKind::EqEq,
+            })
         } else {
             Err(Error::UnexpectedCharacter(self.current))
         }
@@ -217,7 +255,7 @@ impl Lexer {
 mod test {
     use super::*;
     use error::Error::*;
-    use token::Token::*;
+    use token::{Token, TokenKind};
 
     macro_rules! token_test {
         (name: $name:ident,text: $text:expr,token: $expected:expr,) => {
@@ -227,7 +265,9 @@ mod test {
                 let mut expected = $expected.to_vec();
                 let lexer = Lexer::new(text);
                 let tokens = lexer.lex().unwrap();
-                expected.push(Eof);
+                expected.push(Token {
+                    kind: TokenKind::Eof,
+                });
                 assert_eq!(tokens, expected);
             }
         };
@@ -261,13 +301,17 @@ mod test {
     token_test! {
         name: lowercase_identifier,
         text: "hi",
-        token: [Identifier("hi".to_owned())],
+        token: [Token{
+            kind: TokenKind::Identifier("hi".to_owned()),
+        }],
     }
 
     token_test! {
         name: if_keyword,
         text: "if",
-        token: [If],
+        token: [Token{
+            kind: TokenKind::If,
+        }],
     }
 
     /*
@@ -283,7 +327,10 @@ mod test {
     token_test! {
         name: decimal_integer,
         text: "1234",
-        token: [Integer(1234)],
+        token: [Token{
+            kind: TokenKind::Integer(1234)
+        }
+            ],
     }
 
     token_test! {
@@ -295,7 +342,9 @@ mod test {
     token_test! {
         name: newline,
         text: "\n",
-        token: [Newline],
+        token: [Token{
+            kind: TokenKind::Newline,
+        }],
     }
 
     token_test! {
@@ -319,7 +368,15 @@ mod test {
     token_test! {
         name: indent,
         text: "   39",
-        token: [Indent, Integer(39), Dedent],
+        token: [
+            Token {
+                kind: TokenKind::Indent,
+            }, Token {
+                kind: TokenKind::Integer(39),
+            }, Token {
+                kind: TokenKind::Dedent,
+            }
+        ],
     }
 
     token_test! {
@@ -331,13 +388,55 @@ mod test {
     token_test! {
         name: dedent,
         text: "  39\nhmm",
-        token: [Indent, Integer(39), Newline, Dedent, Identifier("hmm".into())],
+        token: [Token {
+            kind: TokenKind::Indent,
+        },
+        Token {
+            kind: TokenKind::Integer(39),
+        },
+        Token {
+            kind: TokenKind::Newline,
+        },
+        Token {
+            kind: TokenKind::Dedent,
+        },
+        Token {
+            kind: TokenKind::Identifier("hmm".into()),
+        }],
     }
 
     token_test! {
         name: multiple_indent,
         text: "  39\n   hmm\n  1",
-        token: [Indent, Integer(39), Newline, Indent, Identifier("hmm".into()), Newline, Dedent, Integer(1), Dedent],
+        token: [
+            Token {
+                kind: TokenKind::Indent,
+            },
+            Token {
+                kind: TokenKind::Integer(39),
+            },
+            Token {
+                kind: TokenKind::Newline,
+            },
+            Token {
+                kind: TokenKind::Indent,
+            },
+            Token {
+                kind: TokenKind::Identifier("hmm".into()),
+            },
+            Token {
+                kind: TokenKind::Newline,
+            },
+            Token {
+                kind: TokenKind::Dedent,
+            },
+            Token {
+                kind: TokenKind::Integer(1),
+            },
+            Token {
+                kind: TokenKind::Dedent,
+            }
+        ],
     }
 
     error_test! {
@@ -349,67 +448,111 @@ mod test {
     token_test! {
         name: print,
         text: "print",
-        token: [Print],
+        token: [
+            Token {
+                kind: TokenKind::Print,
+            }
+        ],
     }
 
     token_test! {
         name: def,
         text: "def",
-        token: [Def],
+        token: [
+            Token {
+                kind: TokenKind::Def,
+            }
+        ],
     }
 
     token_test! {
         name: elif,
         text: "elif",
-        token: [Elif],
+        token: [
+            Token {
+                kind: TokenKind::Elif,
+            }
+        ],
     }
 
     token_test! {
         name: else_token,
         text: "else",
-        token: [Else],
+        token: [
+            Token {
+                kind: TokenKind::Else,
+            }
+        ],
     }
 
     token_test! {
         name: parenl,
         text: "(",
-        token: [ParenL],
+        token: [
+            Token {
+                kind: TokenKind::ParenL,
+            }
+        ],
     }
 
     token_test! {
         name: parenr,
         text: ")",
-        token: [ParenR],
+        token: [
+            Token {
+                kind: TokenKind::ParenR,
+            }
+        ],
     }
 
     token_test! {
         name: return_token,
         text: "return",
-        token: [Return],
+        token: [
+            Token {
+                kind: TokenKind::Return,
+            }
+        ],
     }
 
     token_test! {
         name: colon,
         text: ":",
-        token: [Colon],
+        token: [
+            Token {
+                kind: TokenKind::Colon,
+            }
+        ],
     }
 
     token_test! {
         name:  minus,
         text:  "-",
-        token: [Minus],
+        token: [
+            Token {
+                kind: TokenKind::Minus,
+            }
+        ],
     }
 
     token_test! {
         name:  plus,
         text:  "+",
-        token: [Plus],
+        token: [
+            Token {
+                kind: TokenKind::Plus,
+            }
+        ],
     }
 
     token_test! {
         name: eqeq,
         text: "==",
-        token: [EqEq],
+        token: [
+            Token {
+                kind: TokenKind::EqEq,
+            }
+        ],
     }
 
     error_test! {
