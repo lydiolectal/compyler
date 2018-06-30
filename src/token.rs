@@ -1,13 +1,13 @@
 #[derive(Debug, PartialEq, Clone)]
 pub enum TokenKind {
-    Identifier(String),
+    Identifier,
     If,
     Elif,
     Else,
     Print,
     Def,
     Return,
-    Integer(u32),
+    Integer,
     Newline,
     Indent,
     Dedent,
@@ -23,4 +23,5 @@ pub enum TokenKind {
 #[derive(Clone, Debug, PartialEq)]
 pub struct Token {
     pub kind: TokenKind,
+    pub lexeme: String,
 }

@@ -10,6 +10,7 @@ pub struct Lexer {
     // |  asdfb
     //  ffftttt
     seen_nonblank: bool,
+    cur_token: String,
 }
 
 impl Lexer {
@@ -32,6 +33,7 @@ impl Lexer {
         // know what kind of collection to construct
         let chars = i.collect();
         let indent_stack = vec![0];
+        let cur_token = "".to_owned();
 
         Lexer {
             // here, however, the ambiguity is resolved!
@@ -50,20 +52,33 @@ impl Lexer {
             // - ex: [2, 4, 7, 9] means that indent, respectively, were: [2, 2, 3, 2].
             indent_stack: indent_stack,
             seen_nonblank: false,
+            cur_token: cur_token,
         }
     }
 
+    fn make_token(&mut self, kind: TokenKind) -> Token {
+        let token = Token {
+            kind,
+            lexeme: self.cur_token.clone(),
+        };
+        self.cur_token.clear();
+        token
+    }
+
     fn next(&mut self) -> Option<char> {
+        if let Some(c) = self.current {
+            self.cur_token.push(c);
+        }
         if self.current != Some(' ') {
             self.seen_nonblank = true;
         }
+
         if self.chars.is_empty() {
             self.current = None;
         } else {
             self.current = Some(self.chars.remove(0));
         }
         self.column += 1;
-        self.current
     }
 
     pub fn lex(mut self) -> Result<Vec<Token>, Error> {
@@ -76,17 +91,15 @@ impl Lexer {
                 let cur_indentation = self.indent_stack.last().cloned().unwrap();
                 if self.column == cur_indentation {
                 } else if self.column > cur_indentation {
-                    tokens.push(Token {
-                        kind: TokenKind::Indent,
-                    });
+                    let t = self.make_token(TokenKind::Indent);
+                    tokens.push(t);
                     self.indent_stack.push(self.column);
                 } else if self.column < cur_indentation {
                     let mut indentation_level = self.indent_stack.pop().unwrap();
                     while indentation_level > self.column {
                         indentation_level = self.indent_stack.pop().unwrap();
-                        tokens.push(Token {
-                            kind: TokenKind::Dedent,
-                        });
+                        let t = self.make_token(TokenKind::Dedent);
+                        tokens.push(t);
                     }
                     self.indent_stack.push(indentation_level);
                     if indentation_level < self.column {
@@ -109,33 +122,28 @@ impl Lexer {
                 // ' ' if self.column == 0 => tokens.push(self.lex_indent()),
                 ' ' => self.lex_whitespace(),
                 '(' => {
-                    tokens.push(Token {
-                        kind: TokenKind::ParenL,
-                    });
+                    let t = self.make_token(TokenKind::ParenL);
+                    tokens.push(t);
                     self.next();
                 }
                 ')' => {
-                    tokens.push(Token {
-                        kind: TokenKind::ParenR,
-                    });
+                    let t = self.make_token(TokenKind::ParenR);
+                    tokens.push(t);
                     self.next();
                 }
                 '+' => {
-                    tokens.push(Token {
-                        kind: TokenKind::Plus,
-                    });
+                    let t = self.make_token(TokenKind::Plus);
+                    tokens.push(t);
                     self.next();
                 }
                 '-' => {
-                    tokens.push(Token {
-                        kind: TokenKind::Minus,
-                    });
+                    let t = self.make_token(TokenKind::Minus);
+                    tokens.push(t);
                     self.next();
                 }
                 ':' => {
-                    tokens.push(Token {
-                        kind: TokenKind::Colon,
-                    });
+                    let t = self.make_token(TokenKind::Colon);
+                    tokens.push(t);
                     self.next();
                 }
                 '=' => tokens.push(self.lex_equals()?),
@@ -146,14 +154,11 @@ impl Lexer {
         // - count number of indents on indent_stack
         // - add same # of dedent tokens to token vector. :)
         for _ in 0..self.indent_stack.len() - 1 {
-            tokens.push(Token {
-                kind: TokenKind::Dedent,
-            });
+            let t = self.make_token(TokenKind::Dedent);
+            tokens.push(t);
         }
-        tokens.push(Token {
-            kind: TokenKind::Eof,
-        });
-
+        let t = self.make_token(TokenKind::Eof);
+        tokens.push(t);
         Ok(tokens)
     }
 
@@ -168,27 +173,13 @@ impl Lexer {
         }
 
         match text.as_str() {
-            "if" => Token {
-                kind: TokenKind::If,
-            },
-            "elif" => Token {
-                kind: TokenKind::Elif,
-            },
-            "else" => Token {
-                kind: TokenKind::Else,
-            },
-            "print" => Token {
-                kind: TokenKind::Print,
-            },
-            "def" => Token {
-                kind: TokenKind::Def,
-            },
-            "return" => Token {
-                kind: TokenKind::Return,
-            },
-            _ => Token {
-                kind: TokenKind::Identifier(text),
-            },
+            "if" => self.make_token(TokenKind::If),
+            "elif" => self.make_token(TokenKind::Elif),
+            "else" => self.make_token(TokenKind::Else),
+            "print" => self.make_token(TokenKind::Print),
+            "def" => self.make_token(TokenKind::Def),
+            "return" => self.make_token(TokenKind::Return),
+            _ => self.make_token(TokenKind::Identifier),
         }
     }
 
@@ -203,9 +194,7 @@ impl Lexer {
             }
             self.next();
         }
-        Token {
-            kind: TokenKind::Integer(integer),
-        }
+        self.make_token(TokenKind::Integer)
     }
 
     fn lex_comment(&mut self) {
@@ -221,9 +210,7 @@ impl Lexer {
         self.next();
         self.column = 0;
         self.seen_nonblank = false;
-        Token {
-            kind: TokenKind::Newline,
-        }
+        self.make_token(TokenKind::Newline)
     }
 
     fn lex_backslash(&mut self) -> Result<(), Error> {
@@ -237,14 +224,13 @@ impl Lexer {
 
     fn lex_whitespace(&mut self) {
         while self.next() == Some(' ') {}
+        self.cur_token.clear();
     }
 
     fn lex_equals(&mut self) -> Result<Token, Error> {
         if self.next() == Some('=') {
             self.next();
-            Ok(Token {
-                kind: TokenKind::EqEq,
-            })
+            Ok(self.make_token(TokenKind::EqEq))
         } else {
             Err(Error::UnexpectedCharacter(self.current))
         }
@@ -302,7 +288,8 @@ mod test {
         name: lowercase_identifier,
         text: "hi",
         token: [Token{
-            kind: TokenKind::Identifier("hi".to_owned()),
+            kind: TokenKind::Identifier,
+            lexeme: "hi".to_owned(),
         }],
     }
 
@@ -311,6 +298,7 @@ mod test {
         text: "if",
         token: [Token{
             kind: TokenKind::If,
+            lexeme: "if".to_owned(),
         }],
     }
 
@@ -328,7 +316,8 @@ mod test {
         name: decimal_integer,
         text: "1234",
         token: [Token{
-            kind: TokenKind::Integer(1234)
+            kind: TokenKind::Integer,
+            lexeme: "1234",
         }
             ],
     }
@@ -344,6 +333,7 @@ mod test {
         text: "\n",
         token: [Token{
             kind: TokenKind::Newline,
+            lexeme: "\n",
         }],
     }
 
