@@ -79,6 +79,7 @@ impl Lexer {
             self.current = Some(self.chars.remove(0));
         }
         self.column += 1;
+        self.current
     }
 
     pub fn lex(mut self) -> Result<Vec<Token>, Error> {
@@ -253,6 +254,7 @@ mod test {
                 let tokens = lexer.lex().unwrap();
                 expected.push(Token {
                     kind: TokenKind::Eof,
+                    lexeme: "".to_owned(),
                 });
                 assert_eq!(tokens, expected);
             }
@@ -317,7 +319,7 @@ mod test {
         text: "1234",
         token: [Token{
             kind: TokenKind::Integer,
-            lexeme: "1234",
+            lexeme: "1234".to_owned(),
         }
             ],
     }
@@ -333,7 +335,7 @@ mod test {
         text: "\n",
         token: [Token{
             kind: TokenKind::Newline,
-            lexeme: "\n",
+            lexeme: "\n".to_owned(),
         }],
     }
 
@@ -361,10 +363,13 @@ mod test {
         token: [
             Token {
                 kind: TokenKind::Indent,
+                lexeme: "   ".to_owned(),
             }, Token {
-                kind: TokenKind::Integer(39),
+                kind: TokenKind::Integer,
+                lexeme: "39".to_owned(),
             }, Token {
                 kind: TokenKind::Dedent,
+                lexeme: "".to_owned(),
             }
         ],
     }
@@ -380,18 +385,23 @@ mod test {
         text: "  39\nhmm",
         token: [Token {
             kind: TokenKind::Indent,
+            lexeme: "  ".to_owned(),
         },
         Token {
-            kind: TokenKind::Integer(39),
+            kind: TokenKind::Integer,
+            lexeme: "39".to_owned(),
         },
         Token {
             kind: TokenKind::Newline,
+            lexeme: "\n".to_owned(),
         },
         Token {
             kind: TokenKind::Dedent,
+            lexeme: "".to_owned(),
         },
         Token {
-            kind: TokenKind::Identifier("hmm".into()),
+            kind: TokenKind::Identifier,
+            lexeme: "hmm".to_owned(),
         }],
     }
 
@@ -401,30 +411,39 @@ mod test {
         token: [
             Token {
                 kind: TokenKind::Indent,
+                lexeme: "  ".to_owned(),
             },
             Token {
-                kind: TokenKind::Integer(39),
+                kind: TokenKind::Integer,
+                lexeme: "39".to_owned(),
             },
             Token {
                 kind: TokenKind::Newline,
+                lexeme: "\n".to_owned(),
             },
             Token {
                 kind: TokenKind::Indent,
+                lexeme: "   ".to_owned(),
             },
             Token {
-                kind: TokenKind::Identifier("hmm".into()),
+                kind: TokenKind::Identifier,
+                lexeme: "hmm".to_owned(),
             },
             Token {
                 kind: TokenKind::Newline,
+                lexeme: "\n".to_owned(),
             },
             Token {
                 kind: TokenKind::Dedent,
+                lexeme: "".to_owned(),
             },
             Token {
-                kind: TokenKind::Integer(1),
+                kind: TokenKind::Integer,
+                lexeme: "1".to_owned(),
             },
             Token {
                 kind: TokenKind::Dedent,
+                lexeme: "".to_owned(),
             }
         ],
     }
@@ -441,6 +460,7 @@ mod test {
         token: [
             Token {
                 kind: TokenKind::Print,
+                lexeme: "print".to_owned(),
             }
         ],
     }
@@ -451,6 +471,7 @@ mod test {
         token: [
             Token {
                 kind: TokenKind::Def,
+                lexeme: "def".to_owned(),
             }
         ],
     }
@@ -461,6 +482,7 @@ mod test {
         token: [
             Token {
                 kind: TokenKind::Elif,
+                lexeme: "elif".to_owned(),
             }
         ],
     }
@@ -471,6 +493,7 @@ mod test {
         token: [
             Token {
                 kind: TokenKind::Else,
+                lexeme: "else".to_owned(),
             }
         ],
     }
@@ -481,6 +504,7 @@ mod test {
         token: [
             Token {
                 kind: TokenKind::ParenL,
+                lexeme: "(".to_owned(),
             }
         ],
     }
@@ -491,6 +515,7 @@ mod test {
         token: [
             Token {
                 kind: TokenKind::ParenR,
+                lexeme: ")".to_owned(),
             }
         ],
     }
@@ -501,6 +526,7 @@ mod test {
         token: [
             Token {
                 kind: TokenKind::Return,
+                lexeme: "return".to_owned(),
             }
         ],
     }
@@ -511,6 +537,7 @@ mod test {
         token: [
             Token {
                 kind: TokenKind::Colon,
+                lexeme: ":".to_owned(),
             }
         ],
     }
@@ -521,6 +548,7 @@ mod test {
         token: [
             Token {
                 kind: TokenKind::Minus,
+                lexeme: "-".to_owned(),
             }
         ],
     }
@@ -531,6 +559,7 @@ mod test {
         token: [
             Token {
                 kind: TokenKind::Plus,
+                lexeme: "+".to_owned(),
             }
         ],
     }
@@ -541,6 +570,7 @@ mod test {
         token: [
             Token {
                 kind: TokenKind::EqEq,
+                lexeme: "==".to_owned(),
             }
         ],
     }

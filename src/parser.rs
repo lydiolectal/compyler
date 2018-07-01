@@ -112,13 +112,15 @@ impl Parser {
     fn parse_value(&mut self) -> Result<Value, Error> {
         match self.current {
             Token {
-                kind: TokenKind::Integer(i),
+                kind: TokenKind::Integer,
+                lexeme: i,
             } => {
                 self.next();
-                Ok(Value::Integer(i))
+                Ok(Value::Integer(i.to_u32()))
             }
             Token {
-                kind: TokenKind::Identifier(s),
+                kind: TokenKind::Identifier,
+                lexeme: s,
             } => {
                 self.next();
                 Ok(Value::Variable(s))
