@@ -110,13 +110,15 @@ impl Parser {
     }
 
     fn parse_value(&mut self) -> Result<Value, Error> {
-        match self.current {
+        match self.current.clone() {
             Token {
                 kind: TokenKind::Integer,
                 lexeme: i,
             } => {
                 self.next();
-                Ok(Value::Integer(i.to_u32()))
+                let int_i = i.chars()
+                    .fold(0, |acc, c| acc * 10 + (c as u32 - '0' as u32));
+                Ok(Value::Integer(int_i))
             }
             Token {
                 kind: TokenKind::Identifier,

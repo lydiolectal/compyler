@@ -123,29 +123,29 @@ impl Lexer {
                 // ' ' if self.column == 0 => tokens.push(self.lex_indent()),
                 ' ' => self.lex_whitespace(),
                 '(' => {
+                    self.next();
                     let t = self.make_token(TokenKind::ParenL);
                     tokens.push(t);
-                    self.next();
                 }
                 ')' => {
+                    self.next();
                     let t = self.make_token(TokenKind::ParenR);
                     tokens.push(t);
-                    self.next();
                 }
                 '+' => {
+                    self.next();
                     let t = self.make_token(TokenKind::Plus);
                     tokens.push(t);
-                    self.next();
                 }
                 '-' => {
+                    self.next();
                     let t = self.make_token(TokenKind::Minus);
                     tokens.push(t);
-                    self.next();
                 }
                 ':' => {
+                    self.next();
                     let t = self.make_token(TokenKind::Colon);
                     tokens.push(t);
-                    self.next();
                 }
                 '=' => tokens.push(self.lex_equals()?),
                 _ => return Err(Error::UnexpectedStartOfToken(c)),
@@ -205,6 +205,7 @@ impl Lexer {
             }
             self.next();
         }
+        self.cur_token.clear();
     }
 
     fn lex_newline(&mut self) -> Token {
@@ -217,6 +218,7 @@ impl Lexer {
     fn lex_backslash(&mut self) -> Result<(), Error> {
         if self.next() == Some('\n') {
             self.next();
+            self.cur_token.clear();
             Ok(())
         } else {
             Err(Error::UnpairedBackslash(self.current))
@@ -363,7 +365,7 @@ mod test {
         token: [
             Token {
                 kind: TokenKind::Indent,
-                lexeme: "   ".to_owned(),
+                lexeme: "".to_owned(),
             }, Token {
                 kind: TokenKind::Integer,
                 lexeme: "39".to_owned(),
@@ -385,7 +387,7 @@ mod test {
         text: "  39\nhmm",
         token: [Token {
             kind: TokenKind::Indent,
-            lexeme: "  ".to_owned(),
+            lexeme: "".to_owned(),
         },
         Token {
             kind: TokenKind::Integer,
@@ -411,7 +413,7 @@ mod test {
         token: [
             Token {
                 kind: TokenKind::Indent,
-                lexeme: "  ".to_owned(),
+                lexeme: "".to_owned(),
             },
             Token {
                 kind: TokenKind::Integer,
@@ -423,7 +425,7 @@ mod test {
             },
             Token {
                 kind: TokenKind::Indent,
-                lexeme: "   ".to_owned(),
+                lexeme: "".to_owned(),
             },
             Token {
                 kind: TokenKind::Identifier,
