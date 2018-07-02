@@ -65,6 +65,19 @@ impl Lexer {
         token
     }
 
+    fn make_dent_token(&mut self, kind: TokenKind) -> Token {
+        let mut lexeme = "".to_owned();
+        match self.current {
+            None => {}
+            _ => {
+                for _ in 0..self.column {
+                    lexeme.push(' ');
+                }
+            }
+        }
+        Token { kind, lexeme }
+    }
+
     fn next(&mut self) -> Option<char> {
         if let Some(c) = self.current {
             self.cur_token.push(c);
@@ -92,14 +105,14 @@ impl Lexer {
                 let cur_indentation = self.indent_stack.last().cloned().unwrap();
                 if self.column == cur_indentation {
                 } else if self.column > cur_indentation {
-                    let t = self.make_token(TokenKind::Indent);
+                    let t = self.make_dent_token(TokenKind::Indent);
                     tokens.push(t);
                     self.indent_stack.push(self.column);
                 } else if self.column < cur_indentation {
                     let mut indentation_level = self.indent_stack.pop().unwrap();
                     while indentation_level > self.column {
                         indentation_level = self.indent_stack.pop().unwrap();
-                        let t = self.make_token(TokenKind::Dedent);
+                        let t = self.make_dent_token(TokenKind::Dedent);
                         tokens.push(t);
                     }
                     self.indent_stack.push(indentation_level);
@@ -155,7 +168,7 @@ impl Lexer {
         // - count number of indents on indent_stack
         // - add same # of dedent tokens to token vector. :)
         for _ in 0..self.indent_stack.len() - 1 {
-            let t = self.make_token(TokenKind::Dedent);
+            let t = self.make_dent_token(TokenKind::Dedent);
             tokens.push(t);
         }
         let t = self.make_token(TokenKind::Eof);
@@ -365,7 +378,7 @@ mod test {
         token: [
             Token {
                 kind: TokenKind::Indent,
-                lexeme: "".to_owned(),
+                lexeme: "   ".to_owned(),
             }, Token {
                 kind: TokenKind::Integer,
                 lexeme: "39".to_owned(),
@@ -387,7 +400,7 @@ mod test {
         text: "  39\nhmm",
         token: [Token {
             kind: TokenKind::Indent,
-            lexeme: "".to_owned(),
+            lexeme: "  ".to_owned(),
         },
         Token {
             kind: TokenKind::Integer,
@@ -413,7 +426,7 @@ mod test {
         token: [
             Token {
                 kind: TokenKind::Indent,
-                lexeme: "".to_owned(),
+                lexeme: "  ".to_owned(),
             },
             Token {
                 kind: TokenKind::Integer,
@@ -425,7 +438,7 @@ mod test {
             },
             Token {
                 kind: TokenKind::Indent,
-                lexeme: "".to_owned(),
+                lexeme: "   ".to_owned(),
             },
             Token {
                 kind: TokenKind::Identifier,
@@ -437,7 +450,7 @@ mod test {
             },
             Token {
                 kind: TokenKind::Dedent,
-                lexeme: "".to_owned(),
+                lexeme: "  ".to_owned(),
             },
             Token {
                 kind: TokenKind::Integer,

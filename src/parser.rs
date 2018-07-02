@@ -55,29 +55,35 @@ impl Parser {
         }
     }
 
+    fn expect(&mut self, kind: TokenKind) -> Result<Token, Error> {
+        match self.current.kind {
+            ref kind => Ok(self.current.clone()),
+            _ => Err(Error::UnexpectedToken(self.current.clone())),
+        }
+    }
+
     fn parse_def(&mut self) -> Result<Statement, Error> {
         self.next();
-
-        unimplemented!();
-
-        /*
-
-        struct Token {
-            kind:   TokenKind,
-            lexeme: String,
-        }
-
         let name_token = self.expect(TokenKind::Identifier)?;
         let name_string = name_token.lexeme;
-
-
-
-        if let Token::Identifier(name) = self.current {
-
-        } else {
-            return Err(Error::UnexpectedToken(self.current.clone()));
-        }
-        */
+        self.next();
+        self.expect(TokenKind::ParenL)?;
+        // parameters
+        self.next();
+        self.expect(TokenKind::ParenR)?;
+        self.next();
+        self.expect(TokenKind::Colon)?;
+        self.next();
+        self.expect(TokenKind::Newline)?;
+        self.next();
+        self.expect(TokenKind::Indent)?;
+        self.next();
+        let body = self.parse_body()?;
+        Ok(Statement::Def {
+            name: name_string.to_owned(),
+            params: vec![],
+            body,
+        })
     }
 
     fn parse_expression(&mut self) -> Result<Expression, Error> {
@@ -294,12 +300,21 @@ mod test {
         ],
     }
 
-    // test! {
-    //     name: def_simple_func,
-    //     text: "def fib():\n   print 0",
-    //     program:
-    //         [],
-    // }
+    test! {
+        name: def_simple_func,
+        text: "def fib():\n   print 0",
+        program:
+            [Statement::Def{
+                name: "fib".to_owned(),
+                params: vec!["".to_owned()],
+                body: Body {
+                    statements: vec![Statement::Print(
+                        Expression::Simple(
+                            Value::Integer(0)
+                        )
+                    )]
+                }
+            }],
+    }
 
-    // add fib test
 }
