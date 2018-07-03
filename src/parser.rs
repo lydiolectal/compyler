@@ -74,13 +74,34 @@ impl Parser {
         }
     }
 
+    fn parse_params(&mut self) -> Vec<String> {
+        let mut params = Vec::new();
+        loop {
+            match self.current.kind {
+                TokenKind::Identifier => {
+                    params.push(self.current.lexeme.clone());
+                    self.next();
+                }
+                _ => break,
+            }
+            match self.current.kind {
+                // TODO: use @ operator?
+                TokenKind::Comma => {
+                    self.next();
+                }
+                _ => break,
+            }
+        }
+        params
+    }
+
     fn parse_def(&mut self) -> Result<Statement, Error> {
         let name_token = self.expect(TokenKind::Identifier)?;
         let name_string = name_token.lexeme;
         self.next();
         self.expect(TokenKind::ParenL)?;
-        // parameters
         self.next();
+        let params = self.parse_params();
         self.expect(TokenKind::ParenR)?;
         self.next();
         self.expect(TokenKind::Colon)?;
@@ -92,7 +113,7 @@ impl Parser {
         let body = self.parse_body()?;
         Ok(Statement::Def {
             name: name_string.to_owned(),
-            params: vec![],
+            params: params,
             body,
         })
     }
@@ -318,6 +339,63 @@ mod test {
             [Statement::Def{
                 name: "fib".to_owned(),
                 params: vec![],
+                body: Body {
+                    statements: vec![Statement::Print(
+                        Expression::Simple(
+                            Value::Integer(0)
+                        )
+                    )]
+                }
+            }],
+    }
+
+    test! {
+        name: def_complex_func,
+        text: "def fib():\n   print 0\n   print 1",
+        program:
+            [Statement::Def{
+                name: "fib".to_owned(),
+                params: vec![],
+                body: Body {
+                    statements: vec![
+                    Statement::Print(
+                        Expression::Simple(
+                            Value::Integer(0)
+                        )
+                    ),
+                    Statement::Print(
+                        Expression::Simple(
+                            Value::Integer(1)
+                        )
+                    )]
+                }
+            }],
+    }
+
+    test! {
+        name: def_simple_func_param,
+        text: "def fib(a):\n   print 0",
+        program:
+            [Statement::Def{
+                name: "fib".to_owned(),
+                params: vec!["a".to_owned()],
+                body: Body {
+                    statements: vec![Statement::Print(
+                        Expression::Simple(
+                            Value::Integer(0)
+                        )
+                    )]
+                }
+            }],
+    }
+
+    test! {
+        name: def_simple_func_params,
+        text: "def fib(a, bb, ccc):\n   print 0",
+        program:
+            [Statement::Def{
+                name: "fib".to_owned(),
+                params: vec!["a".to_owned(), "bb".to_owned(), "ccc".to_owned()],
                 body: Body {
                     statements: vec![Statement::Print(
                         Expression::Simple(

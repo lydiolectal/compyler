@@ -160,6 +160,11 @@ impl Lexer {
                     let t = self.make_token(TokenKind::Colon);
                     tokens.push(t);
                 }
+                ',' => {
+                    self.next();
+                    let t = self.make_token(TokenKind::Comma);
+                    tokens.push(t);
+                }
                 '=' => tokens.push(self.lex_equals()?),
                 _ => return Err(Error::UnexpectedStartOfToken(c)),
             }
@@ -553,6 +558,17 @@ mod test {
             Token {
                 kind: TokenKind::Colon,
                 lexeme: ":".to_owned(),
+            }
+        ],
+    }
+
+    token_test! {
+        name: comma,
+        text: ",",
+        token: [
+            Token {
+                kind: TokenKind::Comma,
+                lexeme: ",".to_owned(),
             }
         ],
     }
