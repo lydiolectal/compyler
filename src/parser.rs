@@ -22,7 +22,10 @@ impl Parser {
 
     pub fn parse_program(mut self) -> Result<Program, Error> {
         let body = self.parse_body()?;
-        Ok(Program { body })
+        match self.current.kind {
+            Eof => Ok(Program { body }),
+            _ => Err(Error::UnexpectedToken(self.current.clone())),
+        }
     }
 
     fn parse_body(&mut self) -> Result<Body, Error> {
@@ -30,9 +33,11 @@ impl Parser {
         loop {
             match self.current.kind {
                 Eof => break,
+                Dedent => {
+                    self.next();
+                    break;
+                }
                 Newline => self.next(),
-                // TODO: handle dedents + scope properly. this is a temp fix.
-                Dedent => self.next(),
                 _ => statements.push(self.parse_statement()?),
             }
         }
@@ -61,9 +66,11 @@ impl Parser {
     }
 
     fn expect(&mut self, kind: TokenKind) -> Result<Token, Error> {
-        match self.current.kind {
-            ref kind => Ok(self.current.clone()),
-            _ => Err(Error::UnexpectedToken(self.current.clone())),
+        let res = self.current.clone();
+        if self.current.kind == kind {
+            Ok(res)
+        } else {
+            Err(Error::UnexpectedToken(res))
         }
     }
 
