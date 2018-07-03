@@ -31,6 +31,8 @@ impl Parser {
             match self.current.kind {
                 Eof => break,
                 Newline => self.next(),
+                // TODO: handle dedents + scope properly. this is a temp fix.
+                Dedent => self.next(),
                 _ => statements.push(self.parse_statement()?),
             }
         }
@@ -50,7 +52,10 @@ impl Parser {
                 self.next();
                 Ok(Statement::Return(self.parse_expression()?))
             }
-            Def => self.parse_def(),
+            Def => {
+                self.next();
+                self.parse_def()
+            }
             _ => Err(Error::UnexpectedToken(self.current.clone())),
         }
     }
@@ -63,7 +68,6 @@ impl Parser {
     }
 
     fn parse_def(&mut self) -> Result<Statement, Error> {
-        self.next();
         let name_token = self.expect(TokenKind::Identifier)?;
         let name_string = name_token.lexeme;
         self.next();
@@ -306,7 +310,7 @@ mod test {
         program:
             [Statement::Def{
                 name: "fib".to_owned(),
-                params: vec!["".to_owned()],
+                params: vec![],
                 body: Body {
                     statements: vec![Statement::Print(
                         Expression::Simple(
