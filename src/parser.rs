@@ -462,13 +462,13 @@ mod test {
             }],
     }
 
-    // error_test! {
-    //     name: parse_if_error,
-    //     text: "def fib(a, bb, ccc:\n   print 0",
-    //     error: Error::UnexpectedToken(Token {
-    //         kind: Colon,
-    //         lexeme: ":".to_owned(),
-    //     }),
-    // }
+    error_test! {
+        name: parse_if_error,
+        text: "def fib(a, bb, ccc:\n   print 0",
+        error: Error::UnexpectedToken(Token {
+            kind: Colon,
+            lexeme: ":".to_owned(),
+        }),
+    }
 
 }
