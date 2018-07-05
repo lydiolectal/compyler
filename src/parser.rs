@@ -61,6 +61,10 @@ impl Parser {
                 self.next();
                 self.parse_def()
             }
+            If => {
+                self.next();
+                self.parse_if()
+            }
             _ => Err(Error::UnexpectedToken(self.current.clone())),
         }
     }
@@ -115,6 +119,18 @@ impl Parser {
             params: params,
             body,
         })
+    }
+
+    fn parse_if(&mut self) -> Result<Statement, Error> {
+        let condition = self.parse_expression()?;
+        self.expect(TokenKind::Colon)?;
+        self.next();
+        self.expect(TokenKind::Newline)?;
+        self.next();
+        self.expect(TokenKind::Indent)?;
+        self.next();
+        let body = self.parse_body()?;
+        Ok(Statement::If { condition, body })
     }
 
     fn parse_expression(&mut self) -> Result<Expression, Error> {
@@ -209,13 +225,13 @@ mod test {
     }
 
     parse_test! {
-        name: empty_program,
+        name: parse_empty_program,
         text: " ",
         program: [],
     }
 
     parse_test! {
-        name: print_integer,
+        name: parse_print_integer,
         text: "print 7",
         program: [Statement::Print(
             Expression::Simple(
@@ -224,7 +240,7 @@ mod test {
     }
 
     parse_test! {
-        name:    print_variable,
+        name:    parse_print_variable,
         text:    "print name",
         program: [
             Statement::Print(
@@ -238,7 +254,7 @@ mod test {
     }
 
     parse_test! {
-        name:    print_add,
+        name:    parse_print_add,
         text:    "print 1 + 1",
         program: [
             Statement::Print(
@@ -254,7 +270,7 @@ mod test {
     }
 
     parse_test! {
-        name:    print_sub,
+        name:    parse_print_sub,
         text:    "print 2- 1",
         program: [
             Statement::Print(
@@ -270,7 +286,7 @@ mod test {
     }
 
     parse_test! {
-        name:    print_eqeq,
+        name:    parse_print_eqeq,
         text:    "print 0 == 1",
         program: [
             Statement::Print(
@@ -287,7 +303,7 @@ mod test {
     }
 
     parse_test! {
-        name:    print_complex_eqeq,
+        name:    parse_print_complex_eqeq,
         text:    "print 0 + 1 == 1",
         program: [
             Statement::Print(
@@ -319,7 +335,7 @@ mod test {
     }
 
     parse_test! {
-        name:    return_complex_eqeq,
+        name:    parse_return_complex_eqeq,
         text:    "return 0 + 1 == 1",
         program: [
             Statement::Return(
@@ -344,7 +360,7 @@ mod test {
     }
 
     parse_test! {
-        name: def_simple_func,
+        name: parse_def_simple_func,
         text: "def fib():\n   print 0",
         program:
             [Statement::Def{
@@ -361,7 +377,7 @@ mod test {
     }
 
     parse_test! {
-        name: def_complex_func,
+        name: parse_def_complex_func,
         text: "def fib():\n   print 0\n   print 1",
         program:
             [Statement::Def{
@@ -384,7 +400,7 @@ mod test {
     }
 
     parse_test! {
-        name: def_simple_func_param,
+        name: parse_def_simple_func_param,
         text: "def fib(a):\n   print 0",
         program:
             [Statement::Def{
@@ -401,7 +417,7 @@ mod test {
     }
 
     parse_test! {
-        name: def_simple_func_params,
+        name: parse_def_simple_func_params,
         text: "def fib(a, bb, ccc):\n   print 0",
         program:
             [Statement::Def{
@@ -418,12 +434,41 @@ mod test {
     }
 
     error_test! {
-        name: def_missing_paren,
+        name: parse_def_missing_paren,
         text: "def fib(a, bb, ccc:\n   print 0",
         error: Error::UnexpectedToken(Token {
             kind: Colon,
             lexeme: ":".to_owned(),
         }),
     }
+
+    parse_test! {
+        name: parse_if,
+        text: "if a:\n  print 7",
+        program:
+            [Statement::If{
+                condition: Expression::Simple(
+                    Value::Variable("a".to_owned())),
+                body: Body {
+                    statements: vec![
+                        Statement::Print(
+                            Expression::Simple(
+                                Value::Integer(7)
+                            )
+                        ),
+                    ]
+                }
+
+            }],
+    }
+
+    // error_test! {
+    //     name: parse_if_error,
+    //     text: "def fib(a, bb, ccc:\n   print 0",
+    //     error: Error::UnexpectedToken(Token {
+    //         kind: Colon,
+    //         lexeme: ":".to_owned(),
+    //     }),
+    // }
 
 }

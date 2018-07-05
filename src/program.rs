@@ -15,12 +15,12 @@ pub struct Body {
 pub enum Statement {
     Print(Expression),
     Return(Expression),
-    // If {
-    //     condition: Expression,
-    //     body: Body,
-    //     elifs: Vec<(Expression, Body)>,
-    //     else_body: Option<Body>,
-    // },
+    If {
+        condition: Expression,
+        body: Body,
+        // elifs: Vec<(Expression, Body)>,
+        // else_body: Option<Body>,
+    },
     Def {
         name: String,
         params: Vec<String>,
