@@ -85,7 +85,6 @@ impl Parser {
                 _ => break,
             }
             match self.current.kind {
-                // TODO: use @ operator?
                 TokenKind::Comma => {
                     self.next();
                 }
@@ -175,7 +174,7 @@ mod test {
     use super::*;
     use lexer::Lexer;
 
-    macro_rules! test {
+    macro_rules! parse_test {
         (name: $name:ident,text: $text:expr,program: $expected:expr,) => {
             #[test]
             fn $name() {
@@ -183,6 +182,18 @@ mod test {
                 let expected = $expected.to_vec();
                 let program = parse(text).unwrap();
                 assert_eq!(program.body.statements, expected);
+            }
+        };
+    }
+
+    macro_rules! error_test {
+        (name: $name:ident,text: $text:expr,error: $expected:expr,) => {
+            #[test]
+            fn $name() {
+                let text = $text;
+                let expected = $expected;
+                let error = parse(text).unwrap_err();
+                assert_eq!(error, expected);
             }
         };
     }
@@ -197,13 +208,13 @@ mod test {
         parser.parse_program()
     }
 
-    test! {
+    parse_test! {
         name: empty_program,
         text: " ",
         program: [],
     }
 
-    test! {
+    parse_test! {
         name: print_integer,
         text: "print 7",
         program: [Statement::Print(
@@ -212,7 +223,7 @@ mod test {
         )],
     }
 
-    test! {
+    parse_test! {
         name:    print_variable,
         text:    "print name",
         program: [
@@ -226,7 +237,7 @@ mod test {
         ],
     }
 
-    test! {
+    parse_test! {
         name:    print_add,
         text:    "print 1 + 1",
         program: [
@@ -242,7 +253,7 @@ mod test {
         ],
     }
 
-    test! {
+    parse_test! {
         name:    print_sub,
         text:    "print 2- 1",
         program: [
@@ -258,7 +269,7 @@ mod test {
         ],
     }
 
-    test! {
+    parse_test! {
         name:    print_eqeq,
         text:    "print 0 == 1",
         program: [
@@ -275,7 +286,7 @@ mod test {
         ],
     }
 
-    test! {
+    parse_test! {
         name:    print_complex_eqeq,
         text:    "print 0 + 1 == 1",
         program: [
@@ -295,7 +306,7 @@ mod test {
         ],
     }
 
-    test! {
+    parse_test! {
         name: parse_return,
         text: "return 9",
         program: [
@@ -307,7 +318,7 @@ mod test {
         ],
     }
 
-    test! {
+    parse_test! {
         name:    return_complex_eqeq,
         text:    "return 0 + 1 == 1",
         program: [
@@ -332,7 +343,7 @@ mod test {
         ],
     }
 
-    test! {
+    parse_test! {
         name: def_simple_func,
         text: "def fib():\n   print 0",
         program:
@@ -349,7 +360,7 @@ mod test {
             }],
     }
 
-    test! {
+    parse_test! {
         name: def_complex_func,
         text: "def fib():\n   print 0\n   print 1",
         program:
@@ -372,7 +383,7 @@ mod test {
             }],
     }
 
-    test! {
+    parse_test! {
         name: def_simple_func_param,
         text: "def fib(a):\n   print 0",
         program:
@@ -389,7 +400,7 @@ mod test {
             }],
     }
 
-    test! {
+    parse_test! {
         name: def_simple_func_params,
         text: "def fib(a, bb, ccc):\n   print 0",
         program:
@@ -404,6 +415,15 @@ mod test {
                     )]
                 }
             }],
+    }
+
+    error_test! {
+        name: def_missing_paren,
+        text: "def fib(a, bb, ccc:\n   print 0",
+        error: Error::UnexpectedToken(Token {
+            kind: Colon,
+            lexeme: ":".to_owned(),
+        }),
     }
 
 }

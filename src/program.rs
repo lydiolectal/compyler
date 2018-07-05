@@ -1,4 +1,5 @@
 // struct instance variables private by default
+#[derive(Debug)]
 pub struct Program {
     //pub statements: Vec<Statement>,
     pub body: Body,
