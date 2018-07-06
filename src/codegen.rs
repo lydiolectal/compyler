@@ -47,7 +47,7 @@ impl Statement {
                 atoms.extend(expr);
                 atoms.extend(vec![wasm!(call), Atom("$i".to_owned())]);
             }
-            _ => {}
+            _ => unimplemented!(),
         }
         atoms
     }
@@ -100,6 +100,7 @@ impl Value {
 #[cfg(test)]
 mod test {
     use super::*;
+    use testing::*;
 
     #[test]
     fn test_empty_program() {
@@ -209,6 +210,23 @@ mod test {
              call $i))"
         );
     }
+
+    #[test]
+    fn test_def() {
+        let text = "def f():\n  print 8";
+        let wat = codegen(text);
+        assert_eq!(
+            wat,
+            "(module \
+             (func $i (import \"host\" \"print\") (param i32)) \
+             (func $f \
+             i32.const 8 \
+             call $i) \
+             (func (export \"main\") \
+             ))"
+        )
+    }
+
     /*
         (module
             (func $i

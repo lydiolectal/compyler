@@ -7,11 +7,14 @@ extern crate tempfile;
 extern crate lazy_static;
 
 mod codegen;
+mod common;
 mod compile;
 mod error;
 mod lexer;
 mod parser;
 mod program;
+#[cfg(test)]
+mod testing;
 mod token;
 mod wexp;
 
