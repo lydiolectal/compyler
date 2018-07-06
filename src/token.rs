@@ -17,6 +17,8 @@ pub enum TokenKind {
     Colon,
     Comma,
     EqEq,
+    Lt,
+    Gt,
     Plus,
     Minus,
 }

@@ -165,6 +165,16 @@ impl Lexer {
                     let t = self.make_token(TokenKind::Comma);
                     tokens.push(t);
                 }
+                '<' => {
+                    self.next();
+                    let t = self.make_token(TokenKind::Lt);
+                    tokens.push(t);
+                }
+                '>' => {
+                    self.next();
+                    let t = self.make_token(TokenKind::Gt);
+                    tokens.push(t);
+                }
                 '=' => tokens.push(self.lex_equals()?),
                 _ => return Err(Error::UnexpectedStartOfToken(c)),
             }
@@ -262,7 +272,6 @@ impl Lexer {
 mod test {
     use super::*;
     use error::Error::*;
-    use token::{Token, TokenKind};
 
     macro_rules! token_test {
         (name: $name:ident,text: $text:expr,token: $expected:expr,) => {
@@ -323,16 +332,6 @@ mod test {
             lexeme: "if".to_owned(),
         }],
     }
-
-    /*
-    vec:     Vec::new(), vec![a,b,c]
-    arrays:  [1,2,3] (size is part of the type)
-    slices:  &[1,2,3]
-
-    fn foo(a: [u8; 4]) {
-
-}
-    */
 
     token_test! {
         name: decimal_integer,
@@ -602,6 +601,28 @@ mod test {
             Token {
                 kind: TokenKind::EqEq,
                 lexeme: "==".to_owned(),
+            }
+        ],
+    }
+
+    token_test! {
+        name: lt,
+        text: "<",
+        token: [
+            Token {
+                kind: TokenKind::Lt,
+                lexeme: "<".to_owned(),
+            }
+        ],
+    }
+
+    token_test! {
+        name: gt,
+        text: ">",
+        token: [
+            Token {
+                kind: TokenKind::Gt,
+                lexeme: ">".to_owned(),
             }
         ],
     }

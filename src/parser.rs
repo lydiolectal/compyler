@@ -133,6 +133,16 @@ impl Parser {
                 let e = self.parse_term()?;
                 Ok(Expression::EqEq(Box::new(t), Box::new(e)))
             }
+            Lt => {
+                self.next();
+                let e = self.parse_term()?;
+                Ok(Expression::Lt(Box::new(t), Box::new(e)))
+            }
+            Gt => {
+                self.next();
+                let e = self.parse_term()?;
+                Ok(Expression::Gt(Box::new(t), Box::new(e)))
+            }
             _ => Ok(t),
         }
     }
@@ -214,7 +224,7 @@ mod test {
     }
 
     parse_test! {
-        name: parse_print_integer,
+        name: print_integer,
         text: "print 7",
         program: [Statement::Print(
             Expression::Simple(
@@ -223,7 +233,7 @@ mod test {
     }
 
     parse_test! {
-        name:    parse_print_variable,
+        name:    print_variable,
         text:    "print name",
         program: [
             Statement::Print(
@@ -237,7 +247,7 @@ mod test {
     }
 
     parse_test! {
-        name:    parse_print_add,
+        name:    print_add,
         text:    "print 1 + 1",
         program: [
             Statement::Print(
@@ -253,7 +263,7 @@ mod test {
     }
 
     parse_test! {
-        name:    parse_print_sub,
+        name:    print_sub,
         text:    "print 2- 1",
         program: [
             Statement::Print(
@@ -269,7 +279,7 @@ mod test {
     }
 
     parse_test! {
-        name:    parse_print_eqeq,
+        name:    print_eqeq,
         text:    "print 0 == 1",
         program: [
             Statement::Print(
@@ -286,7 +296,7 @@ mod test {
     }
 
     parse_test! {
-        name:    parse_print_complex_eqeq,
+        name:    print_complex_eqeq,
         text:    "print 0 + 1 == 1",
         program: [
             Statement::Print(
@@ -306,7 +316,7 @@ mod test {
     }
 
     parse_test! {
-        name: parse_return,
+        name: return_int,
         text: "return 9",
         program: [
             Statement::Return(
@@ -318,7 +328,7 @@ mod test {
     }
 
     parse_test! {
-        name:    parse_return_complex_eqeq,
+        name:    return_complex_eqeq,
         text:    "return 0 + 1 == 1",
         program: [
             Statement::Return(
@@ -343,7 +353,7 @@ mod test {
     }
 
     parse_test! {
-        name: parse_def_simple_func,
+        name: def_simple_func,
         text: "def fib():\n   print 0",
         program:
             [Statement::Def{
@@ -360,7 +370,7 @@ mod test {
     }
 
     parse_test! {
-        name: parse_def_complex_func,
+        name: def_complex_func,
         text: "def fib():\n   print 0\n   print 1",
         program:
             [Statement::Def{
@@ -383,7 +393,7 @@ mod test {
     }
 
     parse_test! {
-        name: parse_def_simple_func_param,
+        name: def_simple_func_param,
         text: "def fib(a):\n   print 0",
         program:
             [Statement::Def{
@@ -400,7 +410,7 @@ mod test {
     }
 
     parse_test! {
-        name: parse_def_simple_func_params,
+        name: def_simple_func_params,
         text: "def fib(a, bb, ccc):\n   print 0",
         program:
             [Statement::Def{
@@ -417,7 +427,7 @@ mod test {
     }
 
     error_test! {
-        name: parse_def_missing_paren,
+        name: def_missing_paren,
         text: "def fib(a, bb, ccc:\n   print 0",
         error: Error::UnexpectedToken(Token {
             kind: Colon,
@@ -443,6 +453,42 @@ mod test {
                 }
 
             }],
+    }
+
+    parse_test! {
+        name: print_lt,
+        text: "print 1 < 2",
+        program: [Statement::Print(
+            Expression::Lt(
+                Box::new(Expression::Simple(
+                    Value::Integer(1)
+                )),
+                Box::new(Expression::Simple(
+                    Value::Integer(2)
+                ))
+            )
+        )],
+    }
+
+    parse_test! {
+        name: print_complex_gt,
+        text: "print 1 + 3 > 2 - 1",
+        program: [Statement::Print(
+            Expression::Gt(
+                Box::new(Expression::Add(
+                    Value::Integer(1),
+                    Box::new(Expression::Simple(
+                        Value::Integer(3)
+                    ))
+                )),
+                Box::new(Expression::Sub(
+                    Value::Integer(2),
+                    Box::new(Expression::Simple(
+                        Value::Integer(1)
+                    ))
+                ))
+            )
+        )],
     }
 
     // error_test! {

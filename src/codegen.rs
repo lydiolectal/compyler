@@ -102,129 +102,81 @@ mod test {
     use super::*;
     use testing::*;
 
-    #[test]
-    fn test_empty_program() {
-        let p = Program {
-            body: Body { statements: vec![] },
+    macro_rules! codegen_test {
+        (name: $name:ident,text: $text:expr,wat: $expected:expr,) => {
+            #[test]
+            fn $name() {
+                let text = $text;
+                let expected = $expected;
+                let wexp = codegen(text);
+                assert_eq!(wexp.to_string(), expected);
+            }
         };
-        let wexp = p.codegen();
-        assert_eq!(
-            wexp.to_string(),
-            "(module (func $i (import \"host\" \"print\") (param i32)) (func (export \"main\")))"
-        );
     }
 
-    #[test]
-    fn test_print_int() {
-        let p = Program {
-            body: Body {
-                statements: vec![Statement::Print(Expression::Simple(Value::Integer(24)))],
-            },
-        };
-        let wexp = p.codegen();
-        assert_eq!(
-            wexp.to_string(),
-            "(module (func $i (import \"host\" \"print\") \
-             (param i32)) (func (export \"main\") i32.const 24 call $i))"
-        );
+    codegen_test! {
+        name: empty_program,
+        text: "",
+        wat: "(module (func $i (import \"host\" \"print\") (param i32)) (func (export \"main\")))",
     }
 
-    #[test]
-    fn test_add_int() {
-        let p = Program {
-            body: Body {
-                statements: vec![
-                    Statement::Print(Expression::Add(
-                        Value::Integer(1),
-                        Box::new(Expression::Simple(Value::Integer(2))),
-                    )),
-                ],
-            },
-        };
-        let wexp = p.codegen();
-        assert_eq!(
-            wexp.to_string(),
-            "(module \
-             (func $i (import \"host\" \"print\") (param i32)) \
-             (func (export \"main\") \
-             i32.const 1 \
-             i32.const 2 \
-             i32.add \
-             call $i\
-             ))"
-        );
+    codegen_test! {
+        name: print_int,
+        text: "print 24",
+        wat: "(module (func $i (import \"host\" \"print\") \
+         (param i32)) (func (export \"main\") i32.const 24 call $i))",
     }
 
-    #[test]
-    fn test_sub_int() {
-        let p = Program {
-            body: Body {
-                statements: vec![
-                    Statement::Print(Expression::Sub(
-                        Value::Integer(2),
-                        Box::new(Expression::Simple(Value::Integer(1))),
-                    )),
-                ],
-            },
-        };
-        let wexp = p.codegen();
-        assert_eq!(
-            wexp.to_string(),
-            "(module \
-             (func $i (import \"host\" \"print\") (param i32)) \
-             (func (export \"main\") \
-             i32.const 2 \
-             i32.const 1 \
-             i32.sub \
-             call $i\
-             ))"
-        );
+    codegen_test! {
+        name: add_int,
+        text: "print 1 + 2",
+        wat: "(module \
+         (func $i (import \"host\" \"print\") (param i32)) \
+         (func (export \"main\") \
+         i32.const 1 \
+         i32.const 2 \
+         i32.add \
+         call $i\
+         ))",
     }
 
-    #[test]
-    fn test_add_and_sub_int() {
-        let p = Program {
-            body: Body {
-                statements: vec![
-                    Statement::Print(Expression::Add(
-                        Value::Integer(2),
-                        Box::new(Expression::Sub(
-                            Value::Integer(2),
-                            Box::new(Expression::Simple(Value::Integer(3))),
-                        )),
-                    )),
-                ],
-            },
-        };
-        let wexp = p.codegen();
-        assert_eq!(
-            wexp.to_string(),
-            "(module \
-             (func $i (import \"host\" \"print\") (param i32)) \
-             (func (export \"main\") \
-             i32.const 2 \
-             i32.const 2 \
-             i32.const 3 \
-             i32.sub \
-             i32.add \
-             call $i))"
-        );
+    codegen_test! {
+        name: sub_int,
+        text: "print 2 - 1",
+        wat: "(module \
+         (func $i (import \"host\" \"print\") (param i32)) \
+         (func (export \"main\") \
+         i32.const 2 \
+         i32.const 1 \
+         i32.sub \
+         call $i\
+         ))",
     }
 
-    #[test]
-    fn test_def() {
-        let text = "def f():\n  print 8";
-        let wat = codegen(text);
-        assert_eq!(
-            wat,
-            "(module \
-             (func $i (import \"host\" \"print\") (param i32)) \
-             (func $f \
-             i32.const 8 \
-             call $i) \
-             (func (export \"main\") \
-             ))"
-        )
+    codegen_test! {
+        name: add_and_sub_int,
+        text: "print 2 + 2 - 3",
+        wat: "(module \
+         (func $i (import \"host\" \"print\") (param i32)) \
+         (func (export \"main\") \
+         i32.const 2 \
+         i32.const 2 \
+         i32.const 3 \
+         i32.sub \
+         i32.add \
+         call $i))",
+    }
+
+    codegen_test! {
+        name: test_def,
+        text: "def f():\n  print 8",
+        wat: "(module \
+            (func $i (import \"host\" \"print\") (param i32)) \
+            (func $f \
+            i32.const 8 \
+            call $i) \
+            (func (export \"main\") \
+            ))",
     }
 
     /*

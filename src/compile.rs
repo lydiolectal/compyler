@@ -1,8 +1,5 @@
-use error::Error;
-use lexer::Lexer;
-use parser::Parser;
+use common::*;
 use regex::Regex;
-use wexp::Wexp;
 
 lazy_static! {
     static ref PRINT_RE: Regex = Regex::new(r"^called host host.print[(]([^)]*)[)] =>$").unwrap();
