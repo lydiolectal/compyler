@@ -18,12 +18,9 @@ pub enum Statement {
     If {
         condition: Expression,
         body: Body,
+        elif: Vec<(Expression, Body)>,
+        else_body: Option<Body>,
     },
-    Elif {
-        condition: Expression,
-        body: Body,
-    },
-    Else(Body),
     Def {
         name: String,
         params: Vec<String>,

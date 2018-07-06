@@ -99,7 +99,6 @@ impl Value {
 
 #[cfg(test)]
 mod test {
-    use super::*;
     use testing::*;
 
     macro_rules! codegen_test {
@@ -167,17 +166,17 @@ mod test {
          call $i))",
     }
 
-    codegen_test! {
-        name: test_def,
-        text: "def f():\n  print 8",
-        wat: "(module \
-            (func $i (import \"host\" \"print\") (param i32)) \
-            (func $f \
-            i32.const 8 \
-            call $i) \
-            (func (export \"main\") \
-            ))",
-    }
+    // codegen_test! {
+    //     name: test_def,
+    //     text: "def f():\n  print 8",
+    //     wat: "(module \
+    //         (func $i (import \"host\" \"print\") (param i32)) \
+    //         (func $f \
+    //         i32.const 8 \
+    //         call $i) \
+    //         (func (export \"main\") \
+    //         ))",
+    // }
 
     /*
         (module

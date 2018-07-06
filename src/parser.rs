@@ -22,6 +22,12 @@ impl Parser {
 
     pub fn parse_program(mut self) -> Result<Program, Error> {
         let body = self.parse_body()?;
+        if !self.tokens.is_empty() {
+            panic!(
+                "Did not consume token stream at {}.",
+                self.current.lexeme.clone()
+            );
+        }
         match self.current.kind {
             Eof => Ok(Program { body }),
             _ => Err(Error::UnexpectedToken(self.current.clone())),
@@ -40,9 +46,6 @@ impl Parser {
                 Newline => self.next(),
                 _ => statements.push(self.parse_statement()?),
             }
-        }
-        if !self.tokens.is_empty() {
-            panic!("Did not consume token stream.");
         }
         Ok(Body { statements })
     }
@@ -122,7 +125,12 @@ impl Parser {
         self.expect(TokenKind::Newline)?;
         self.expect(TokenKind::Indent)?;
         let body = self.parse_body()?;
-        Ok(Statement::If { condition, body })
+        Ok(Statement::If {
+            condition,
+            body,
+            elif: vec![],
+            else_body: None,
+        })
     }
 
     fn parse_expression(&mut self) -> Result<Expression, Error> {
@@ -353,6 +361,42 @@ mod test {
     }
 
     parse_test! {
+        name: print_lt,
+        text: "print 1 < 2",
+        program: [Statement::Print(
+            Expression::Lt(
+                Box::new(Expression::Simple(
+                    Value::Integer(1)
+                )),
+                Box::new(Expression::Simple(
+                    Value::Integer(2)
+                ))
+            )
+        )],
+    }
+
+    parse_test! {
+        name: print_complex_gt,
+        text: "print 1 + 3 > 2 - 1",
+        program: [Statement::Print(
+            Expression::Gt(
+                Box::new(Expression::Add(
+                    Value::Integer(1),
+                    Box::new(Expression::Simple(
+                        Value::Integer(3)
+                    ))
+                )),
+                Box::new(Expression::Sub(
+                    Value::Integer(2),
+                    Box::new(Expression::Simple(
+                        Value::Integer(1)
+                    ))
+                ))
+            )
+        )],
+    }
+
+    parse_test! {
         name: def_simple_func,
         text: "def fib():\n   print 0",
         program:
@@ -450,45 +494,41 @@ mod test {
                             )
                         ),
                     ]
-                }
-
+                },
+                elif: vec![],
+                else_body: None,
             }],
     }
 
     parse_test! {
-        name: print_lt,
-        text: "print 1 < 2",
-        program: [Statement::Print(
-            Expression::Lt(
-                Box::new(Expression::Simple(
-                    Value::Integer(1)
-                )),
-                Box::new(Expression::Simple(
-                    Value::Integer(2)
-                ))
-            )
-        )],
-    }
-
-    parse_test! {
-        name: print_complex_gt,
-        text: "print 1 + 3 > 2 - 1",
-        program: [Statement::Print(
-            Expression::Gt(
-                Box::new(Expression::Add(
-                    Value::Integer(1),
-                    Box::new(Expression::Simple(
-                        Value::Integer(3)
-                    ))
-                )),
-                Box::new(Expression::Sub(
-                    Value::Integer(2),
-                    Box::new(Expression::Simple(
-                        Value::Integer(1)
-                    ))
-                ))
-            )
-        )],
+        name: parse_if_elif,
+        text: "if a:\n  print 7\nelif b:\n  print 8",
+        program:
+            [Statement::If{
+                condition: Expression::Simple(
+                    Value::Variable("a".to_owned())),
+                body: Body {
+                    statements: vec![
+                        Statement::Print(
+                            Expression::Simple(
+                                Value::Integer(7)
+                            )
+                        ),
+                    ]
+                },
+                elif: vec![(Expression::Simple(
+                    Value::Variable("b".to_owned())),
+                    Body {
+                        statements: vec![
+                            Statement::Print(
+                                Expression::Simple(
+                                    Value::Integer(8)
+                                )
+                            ),
+                        ]
+                    })],
+                else_body: None,
+            }],
     }
 
     // error_test! {
