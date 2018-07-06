@@ -4,4 +4,4 @@ A Pyth (scoped subset of Python 2.5 to Web Assembly compiler, written in Rust. L
 
 ## Authors
 * **Lydia Ding** [lydiolectal](https://github.com/lydiolectal)
-* **Casey Rodamor** [casey](https://github.com/casey)
+* **Casey Rodarmor** [casey](https://github.com/casey)
