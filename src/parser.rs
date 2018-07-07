@@ -125,30 +125,46 @@ impl Parser {
         self.expect(TokenKind::Newline)?;
         self.expect(TokenKind::Indent)?;
         let body = self.parse_body()?;
-        let mut elif = Vec::new();
-        loop {
-            if self.current.kind == TokenKind::Elif {
-                self.next();
-                elif.push(self.parse_elif()?);
-            } else {
-                break;
-            }
-        }
+        let elif = self.parse_elif()?;
+        let else_body = self.parse_else()?;
         Ok(Statement::If {
             condition,
             body,
             elif,
-            else_body: None,
+            else_body,
         })
     }
 
-    fn parse_elif(&mut self) -> Result<(Expression, Body), Error> {
-        let condition = self.parse_expression()?;
-        self.expect(TokenKind::Colon)?;
-        self.expect(TokenKind::Newline)?;
-        self.expect(TokenKind::Indent)?;
-        let body = self.parse_body()?;
-        Ok((condition, body))
+    fn parse_elif(&mut self) -> Result<Vec<(Expression, Body)>, Error> {
+        let mut elif = Vec::new();
+        loop {
+            if self.current.kind == TokenKind::Elif {
+                self.next();
+                let condition = self.parse_expression()?;
+                self.expect(TokenKind::Colon)?;
+                self.expect(TokenKind::Newline)?;
+                self.expect(TokenKind::Indent)?;
+                let body = self.parse_body()?;
+                elif.push((condition, body));
+            } else {
+                break;
+            }
+        }
+        Ok(elif)
+    }
+
+    // TODO: find out if wrapping an option in a result is right?
+    fn parse_else(&mut self) -> Result<Option<Body>, Error> {
+        if self.current.kind == TokenKind::Else {
+            self.next();
+            self.expect(TokenKind::Colon)?;
+            self.expect(TokenKind::Newline)?;
+            self.expect(TokenKind::Indent)?;
+            let body = self.parse_body()?;
+            Ok(Some(body))
+        } else {
+            Ok(None)
+        }
     }
 
     fn parse_expression(&mut self) -> Result<Expression, Error> {
@@ -518,6 +534,15 @@ mod test {
             }],
     }
 
+    error_test! {
+        name: parse_if_error,
+        text: "def fib(a, bb, ccc:\n   print 0",
+        error: Error::UnexpectedToken(Token {
+            kind: Colon,
+            lexeme: ":".to_owned(),
+        }),
+    }
+
     parse_test! {
         name: parse_if_elif,
         text: "if a:\n  print 7\nelif b:\n  print 8",
@@ -549,13 +574,75 @@ mod test {
             }],
     }
 
-    // error_test! {
-    //     name: parse_if_error,
-    //     text: "def fib(a, bb, ccc:\n   print 0",
-    //     error: Error::UnexpectedToken(Token {
-    //         kind: Colon,
-    //         lexeme: ":".to_owned(),
-    //     }),
-    // }
+    parse_test! {
+        name: parse_if_else,
+        text: "if a:\n  print 7\nelse:\n  print 8",
+        program:
+            [Statement::If{
+                condition: Expression::Simple(
+                    Value::Variable("a".to_owned())),
+                body: Body {
+                    statements: vec![
+                        Statement::Print(
+                            Expression::Simple(
+                                Value::Integer(7)
+                            )
+                        ),
+                    ]
+                },
+                elif: vec![],
+                else_body: Some(
+                    Body {
+                        statements: vec![
+                            Statement::Print(
+                                Expression::Simple(
+                                    Value::Integer(8)
+                                )
+                            ),
+                        ]
+                    }),
+            }],
+    }
+
+    parse_test! {
+        name: parse_if_elif_else,
+        text: "if a:\n  print 7\nelif b:\n  print 8\nelse:\n  print 9",
+        program:
+            [Statement::If{
+                condition: Expression::Simple(
+                    Value::Variable("a".to_owned())),
+                body: Body {
+                    statements: vec![
+                        Statement::Print(
+                            Expression::Simple(
+                                Value::Integer(7)
+                            )
+                        ),
+                    ]
+                },
+                elif: vec![(Expression::Simple(
+                    Value::Variable("b".to_owned())),
+                    Body {
+                        statements: vec![
+                            Statement::Print(
+                                Expression::Simple(
+                                    Value::Integer(8)
+                                )
+                            ),
+                        ]
+                    })],
+                else_body: Some(
+                    Body {
+                        statements: vec![
+                            Statement::Print(
+                                Expression::Simple(
+                                    Value::Integer(9)
+                                )
+                            ),
+                        ]
+                    }
+                ),
+            }],
+    }
 
 }
