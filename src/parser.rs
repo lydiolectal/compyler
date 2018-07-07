@@ -125,12 +125,30 @@ impl Parser {
         self.expect(TokenKind::Newline)?;
         self.expect(TokenKind::Indent)?;
         let body = self.parse_body()?;
+        let mut elif = Vec::new();
+        loop {
+            if self.current.kind == TokenKind::Elif {
+                self.next();
+                elif.push(self.parse_elif()?);
+            } else {
+                break;
+            }
+        }
         Ok(Statement::If {
             condition,
             body,
-            elif: vec![],
+            elif,
             else_body: None,
         })
+    }
+
+    fn parse_elif(&mut self) -> Result<(Expression, Body), Error> {
+        let condition = self.parse_expression()?;
+        self.expect(TokenKind::Colon)?;
+        self.expect(TokenKind::Newline)?;
+        self.expect(TokenKind::Indent)?;
+        let body = self.parse_body()?;
+        Ok((condition, body))
     }
 
     fn parse_expression(&mut self) -> Result<Expression, Error> {
