@@ -1,3 +1,4 @@
 /static/*.wasm
 /target
 **/*.rs.bk
+/__pycache__/

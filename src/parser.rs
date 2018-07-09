@@ -82,7 +82,7 @@ impl Parser {
         }
     }
 
-    fn parse_params(&mut self) -> Vec<String> {
+    fn parse_def_params(&mut self) -> Vec<String> {
         let mut params = Vec::new();
         loop {
             match self.current.kind {
@@ -106,7 +106,7 @@ impl Parser {
         let name_token = self.expect(TokenKind::Identifier)?;
         let name_string = name_token.lexeme;
         self.expect(TokenKind::ParenL)?;
-        let params = self.parse_params();
+        let params = self.parse_def_params();
         self.expect(TokenKind::ParenR)?;
         self.expect(TokenKind::Colon)?;
         self.expect(TokenKind::Newline)?;
@@ -202,8 +202,36 @@ impl Parser {
                 let e = self.parse_term()?;
                 Ok(Expression::Sub(v, Box::new(e)))
             }
+            // parse a call to a function
+            ParenL => match v {
+                Value::Variable(s) => {
+                    self.next();
+                    let params = self.parse_call_params()?;
+                    Ok(Expression::Call { name: s, params })
+                }
+                _ => Err(Error::UnexpectedToken(self.current.clone())),
+            },
             _ => Ok(Expression::Simple(v)),
         }
+    }
+
+    fn parse_call_params(&mut self) -> Result<Vec<Expression>, Error> {
+        let mut params = Vec::new();
+        loop {
+            match self.current.kind {
+                ParenR => break,
+                _ => {
+                    let e = self.parse_expression()?;
+                    params.push(e);
+                    match self.current.kind {
+                        Comma => self.next(),
+                        _ => break,
+                    }
+                }
+            }
+        }
+        self.expect(TokenKind::ParenR)?;
+        Ok(params)
     }
 
     fn parse_value(&mut self) -> Result<Value, Error> {
@@ -514,6 +542,27 @@ mod test {
     }
 
     parse_test! {
+        name: function_call,
+        text: "print foo(n, 7+ 9)",
+        program: [Statement::Print(
+            Expression::Call {
+                name: "foo".to_owned(),
+                params: vec![
+                    Expression::Simple(
+                        Value::Variable("n".to_owned())
+                    ),
+                    Expression::Add(
+                        Value::Integer(7),
+                        Box::new(Expression::Simple(
+                            Value::Integer(9)
+                        ))
+                    )
+                ],
+            }
+        )],
+    }
+
+    parse_test! {
         name: parse_if,
         text: "if a:\n  print 7",
         program:
@@ -644,5 +693,46 @@ mod test {
                 ),
             }],
     }
+
+    // parse_test! {
+    //     name: parse_fib,
+    //     test: "def fib(n):\n  if n < 2:\n   return n\n  else:\n   return fib(n - 2) + fib(n - 1)",
+    //     program:
+    //         [Statement::Def{
+    //             name: "fib".to_owned(),
+    //             params: vec!["n".to_owned()],
+    //             body: Body {
+    //                 statements: vec![
+    //                     Statement::If{
+    //                         condition: Expression::Lt(
+    //                             Box::new(Expression::Simple(
+    //                                 Value::Variable("n".to_owned())
+    //                             )),
+    //                             Box::new(Expression::Simple(
+    //                                 Value::Integer(2)
+    //                             ))
+    //                         ),
+    //                         body: Body {
+    //                             statements: vec![Statement::Return(
+    //                                 Expression::Simple(
+    //                                     Value::Variable("n".to_owned())
+    //                                 )
+    //                             )]
+    //                         },
+    //                         elif: vec![],
+    //                         else_body: Some(
+    //                             Body {
+    //                                 statements: vec![Statement::Return(
+    //                                     Expression::Add(
+    //                                         Value:: // TODO: this!
+    //                                     )
+    //                                 )]
+    //                             }
+    //                         ),
+    //                     },
+    //                 ]
+    //             },
+    //         }]
+    // }
 
 }

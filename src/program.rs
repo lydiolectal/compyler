@@ -35,6 +35,10 @@ pub enum Expression {
     Gt(Box<Expression>, Box<Expression>),
     Add(Value, Box<Expression>),
     Sub(Value, Box<Expression>),
+    Call {
+        name: String,
+        params: Vec<Expression>,
+    },
     Simple(Value),
 }
 
