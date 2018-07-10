@@ -189,7 +189,7 @@ impl Parser {
     }
 
     fn parse_term(&mut self) -> Result<Expression, Error> {
-        let c = self.parse_call()?;
+        let c = self.parse_primary()?;
         match self.current.kind {
             Plus => {
                 self.next();
@@ -205,34 +205,30 @@ impl Parser {
         }
     }
 
-    // parse a call to a function
-    fn parse_call(&mut self) -> Result<Expression, Error> {
+    fn parse_primary(&mut self) -> Result<Expression, Error> {
         let v = self.parse_value()?;
         match self.current.kind {
             ParenL => match v {
-                Value::Variable(s) => {
-                    self.next();
-                    let mut params = Vec::new();
-                    loop {
-                        match self.current.kind {
-                            ParenR => break,
-                            _ => {
-                                let e = self.parse_expression()?;
-                                params.push(e);
-                                match self.current.kind {
-                                    Comma => self.next(),
-                                    _ => break,
-                                }
-                            }
-                        }
-                    }
-                    self.expect(TokenKind::ParenR)?;
-                    Ok(Expression::Call { name: s, params })
-                }
+                Value::Variable(s) => self.parse_call(s),
                 _ => Err(Error::UnexpectedToken(self.current.clone())),
             },
             _ => Ok(Expression::Simple(v)),
         }
+    }
+
+    fn parse_call(&mut self, name: String) -> Result<Expression, Error> {
+        self.next();
+        let mut params = Vec::new();
+        while self.current.kind != ParenR {
+            let e = self.parse_expression()?;
+            params.push(e);
+            match self.current.kind {
+                Comma => self.next(),
+                _ => break,
+            }
+        }
+        self.expect(TokenKind::ParenR)?;
+        Ok(Expression::Call { name, params })
     }
 
     fn parse_value(&mut self) -> Result<Value, Error> {
