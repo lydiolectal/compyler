@@ -1,3 +1,4 @@
+pub use codegen::CodeGenerator;
 pub use error::Error;
 pub use lexer::Lexer;
 pub use parser::Parser;

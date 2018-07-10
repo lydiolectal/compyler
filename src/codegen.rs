@@ -1,6 +1,11 @@
 use program::*;
 use wexp::Wexp::{self, *};
 
+pub struct CodeGenerator {
+    program: Program,
+    // functions, etc.
+}
+
 macro_rules! wasm {
     ($i:ident) => {
         ::wexp::Wexp::Atom(stringify!($i).to_string())
@@ -11,8 +16,12 @@ macro_rules! wasm {
     }};
 }
 
-impl Program {
-    pub fn codegen(&self) -> Wexp {
+impl CodeGenerator {
+    pub fn new(program: Program) -> CodeGenerator {
+        CodeGenerator { program }
+    }
+
+    pub fn codegen(mut self) -> Wexp {
         let print = List(vec![
             wasm!(func),
             Atom("$i".to_string()),
@@ -21,11 +30,19 @@ impl Program {
         ]);
         let mut module = vec![wasm!(module), print];
         let mut main = vec![wasm!(func), List(vec![wasm!(export), wasm!("\"main\"")])];
-        main.extend(self.body.codegen());
+        // self.functions.push(self.codegen_def(self.program.body));
+        // for function in self.functions {
+        //     module.push function;
+        // }
+        main.extend(self.program.body.codegen());
         // for some other def statements in self.statements
         // module.push(List(stmt))
         module.push(List(main));
         List(module)
+    }
+
+    pub fn codegen_def(&mut self, body: &Body) -> Wexp {
+        unimplemented!();
     }
 }
 
@@ -166,17 +183,17 @@ mod test {
          call $i))",
     }
 
-    // codegen_test! {
-    //     name: test_def,
-    //     text: "def f():\n  print 8",
-    //     wat: "(module \
-    //         (func $i (import \"host\" \"print\") (param i32)) \
-    //         (func $f \
-    //         i32.const 8 \
-    //         call $i) \
-    //         (func (export \"main\") \
-    //         ))",
-    // }
+    codegen_test! {
+        name: test_def,
+        text: "def f():\n  print 8",
+        wat: "(module \
+            (func $i (import \"host\" \"print\") (param i32)) \
+            (func $f \
+            i32.const 8 \
+            call $i) \
+            (func (export \"main\") \
+            ))",
+    }
 
     /*
         (module

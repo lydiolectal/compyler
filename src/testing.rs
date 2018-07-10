@@ -12,5 +12,6 @@ pub fn parse(text: &str) -> Result<Program, Error> {
 
 pub fn codegen(text: &str) -> String {
     let program = parse(text).unwrap();
-    program.codegen().to_string()
+    let codegenerator = CodeGenerator::new(program);
+    codegenerator.codegen().to_string()
 }

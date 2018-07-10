@@ -10,7 +10,8 @@ pub fn compile(text: &str) -> Result<Wexp, Error> {
     let tokens = lexer.lex()?;
     let parser = Parser::new(tokens);
     let program = parser.parse_program()?;
-    Ok(program.codegen())
+    let codegenerator = CodeGenerator::new(program);
+    Ok(codegenerator.codegen())
 }
 
 #[cfg(test)]
