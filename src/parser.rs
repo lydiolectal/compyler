@@ -153,7 +153,6 @@ impl Parser {
         Ok(elif)
     }
 
-    // TODO: find out if wrapping an option in a result is right?
     fn parse_else(&mut self) -> Result<Option<Body>, Error> {
         if self.current.kind == TokenKind::Else {
             self.next();
@@ -190,48 +189,50 @@ impl Parser {
     }
 
     fn parse_term(&mut self) -> Result<Expression, Error> {
-        let v = self.parse_value()?;
+        let c = self.parse_call()?;
         match self.current.kind {
             Plus => {
                 self.next();
                 let e = self.parse_term()?;
-                Ok(Expression::Add(v, Box::new(e)))
+                Ok(Expression::Add(Box::new(c), Box::new(e)))
             }
             Minus => {
                 self.next();
                 let e = self.parse_term()?;
-                Ok(Expression::Sub(v, Box::new(e)))
+                Ok(Expression::Sub(Box::new(c), Box::new(e)))
             }
-            // parse a call to a function
+            _ => Ok(c),
+        }
+    }
+
+    // parse a call to a function
+    fn parse_call(&mut self) -> Result<Expression, Error> {
+        let v = self.parse_value()?;
+        match self.current.kind {
             ParenL => match v {
                 Value::Variable(s) => {
                     self.next();
-                    let params = self.parse_call_params()?;
+                    let mut params = Vec::new();
+                    loop {
+                        match self.current.kind {
+                            ParenR => break,
+                            _ => {
+                                let e = self.parse_expression()?;
+                                params.push(e);
+                                match self.current.kind {
+                                    Comma => self.next(),
+                                    _ => break,
+                                }
+                            }
+                        }
+                    }
+                    self.expect(TokenKind::ParenR)?;
                     Ok(Expression::Call { name: s, params })
                 }
                 _ => Err(Error::UnexpectedToken(self.current.clone())),
             },
             _ => Ok(Expression::Simple(v)),
         }
-    }
-
-    fn parse_call_params(&mut self) -> Result<Vec<Expression>, Error> {
-        let mut params = Vec::new();
-        loop {
-            match self.current.kind {
-                ParenR => break,
-                _ => {
-                    let e = self.parse_expression()?;
-                    params.push(e);
-                    match self.current.kind {
-                        Comma => self.next(),
-                        _ => break,
-                    }
-                }
-            }
-        }
-        self.expect(TokenKind::ParenR)?;
-        Ok(params)
     }
 
     fn parse_value(&mut self) -> Result<Value, Error> {
@@ -322,7 +323,8 @@ mod test {
         program: [
             Statement::Print(
                 Expression::Add(
-                    Value::Integer(1),
+                    Box::new(Expression::Simple(
+                        Value::Integer(1))),
                     Box::new(Expression::Simple(
                         Value::Integer(1)
                         )
@@ -338,7 +340,8 @@ mod test {
         program: [
             Statement::Print(
                 Expression::Sub(
-                    Value::Integer(2),
+                    Box::new(Expression::Simple(
+                        Value::Integer(2))),
                     Box::new(Expression::Simple(
                         Value::Integer(1)
                         )
@@ -372,7 +375,8 @@ mod test {
             Statement::Print(
                 Expression::EqEq(
                     Box::new(Expression::Add(
-                        Value::Integer(0),
+                        Box::new(Expression::Simple(
+                            Value::Integer(0))),
                         Box::new(Expression::Simple(
                             Value::Integer(1)
                         ))
@@ -405,7 +409,8 @@ mod test {
                 Expression::EqEq(
                     Box::new(
                         Expression::Add(
-                            Value::Integer(0),
+                            Box::new(Expression::Simple(
+                                Value::Integer(0))),
                             Box::new(Expression::Simple(
                                 Value::Integer(1)
                                 )
@@ -443,13 +448,15 @@ mod test {
         program: [Statement::Print(
             Expression::Gt(
                 Box::new(Expression::Add(
-                    Value::Integer(1),
+                    Box::new(Expression::Simple(
+                        Value::Integer(1))),
                     Box::new(Expression::Simple(
                         Value::Integer(3)
                     ))
                 )),
                 Box::new(Expression::Sub(
-                    Value::Integer(2),
+                    Box::new(Expression::Simple(
+                        Value::Integer(2))),
                     Box::new(Expression::Simple(
                         Value::Integer(1)
                     ))
@@ -552,7 +559,8 @@ mod test {
                         Value::Variable("n".to_owned())
                     ),
                     Expression::Add(
-                        Value::Integer(7),
+                        Box::new(Expression::Simple(
+                            Value::Integer(7))),
                         Box::new(Expression::Simple(
                             Value::Integer(9)
                         ))
@@ -694,45 +702,71 @@ mod test {
             }],
     }
 
-    // parse_test! {
-    //     name: parse_fib,
-    //     test: "def fib(n):\n  if n < 2:\n   return n\n  else:\n   return fib(n - 2) + fib(n - 1)",
-    //     program:
-    //         [Statement::Def{
-    //             name: "fib".to_owned(),
-    //             params: vec!["n".to_owned()],
-    //             body: Body {
-    //                 statements: vec![
-    //                     Statement::If{
-    //                         condition: Expression::Lt(
-    //                             Box::new(Expression::Simple(
-    //                                 Value::Variable("n".to_owned())
-    //                             )),
-    //                             Box::new(Expression::Simple(
-    //                                 Value::Integer(2)
-    //                             ))
-    //                         ),
-    //                         body: Body {
-    //                             statements: vec![Statement::Return(
-    //                                 Expression::Simple(
-    //                                     Value::Variable("n".to_owned())
-    //                                 )
-    //                             )]
-    //                         },
-    //                         elif: vec![],
-    //                         else_body: Some(
-    //                             Body {
-    //                                 statements: vec![Statement::Return(
-    //                                     Expression::Add(
-    //                                         Value:: // TODO: this!
-    //                                     )
-    //                                 )]
-    //                             }
-    //                         ),
-    //                     },
-    //                 ]
-    //             },
-    //         }]
-    // }
+    parse_test! {
+        name: parse_fib,
+        text: "def fib(n):\n  if n < 2:\n   return n\n  else:\n   return fib(n - 2) + fib(n - 1)",
+        program:
+            [Statement::Def{
+                name: "fib".to_owned(),
+                params: vec!["n".to_owned()],
+                body: Body {
+                    statements: vec![
+                        Statement::If {
+                            condition: Expression::Lt(
+                                Box::new(Expression::Simple(
+                                    Value::Variable("n".to_owned())
+                                )),
+                                Box::new(Expression::Simple(
+                                    Value::Integer(2)
+                                ))
+                            ),
+                            body: Body {
+                                statements: vec![Statement::Return(
+                                    Expression::Simple(
+                                        Value::Variable("n".to_owned())
+                                    )
+                                )]
+                            },
+                            elif: vec![],
+                            else_body: Some(
+                                Body {
+                                    statements: vec![Statement::Return(
+                                        Expression::Add(
+                                            Box::new(Expression::Call{
+                                                name: "fib".to_owned(),
+                                                params: vec![
+                                                    Expression::Sub(
+                                                        Box::new(Expression::Simple(
+                                                            Value::Variable("n".to_owned())
+                                                        )),
+                                                        Box::new(Expression::Simple(
+                                                            Value::Integer(2)
+                                                        ))
+                                                    )
+                                                ],
+                                            }),
+                                            Box::new(Expression::Call{
+                                                name:"fib".to_owned(),
+                                                params: vec![
+                                                    Expression::Sub(
+                                                        Box::new(Expression::Simple(
+                                                            Value::Variable("n".to_owned())
+                                                        )),
+                                                        Box::new(Expression::Simple(
+                                                            Value::Integer(1)
+                                                        ))
+                                                    )
+                                                ],
+                                            })
+                                        )
+                                        )
+                                    ]
+                                }
+                            )
+                        }
+                    ]
+                },
+            }],
+    }
 
 }
