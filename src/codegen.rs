@@ -34,7 +34,7 @@ impl CodeGenerator {
         // for function in self.functions {
         //     module.push function;
         // }
-        main.extend(self.program.body.codegen());
+        main.extend(self.codegen_body(&self.program.body));
         // for some other def statements in self.statements
         // module.push(List(stmt))
         module.push(List(main));
@@ -44,23 +44,19 @@ impl CodeGenerator {
     pub fn codegen_def(&mut self, body: &Body) -> Wexp {
         unimplemented!();
     }
-}
 
-impl Body {
-    pub fn codegen(&self) -> Vec<Wexp> {
-        self.statements
+    pub fn codegen_body(&self, body: &Body) -> Vec<Wexp> {
+        body.statements
             .iter()
-            .flat_map(|stmt| stmt.codegen())
+            .flat_map(|stmt| self.codegen_statement(stmt))
             .collect()
     }
-}
 
-impl Statement {
-    pub fn codegen(&self) -> Vec<Wexp> {
+    pub fn codegen_statement(&self, stmt: &Statement) -> Vec<Wexp> {
         let mut atoms = vec![];
-        match self {
+        match stmt {
             Statement::Print(e) => {
-                let expr = e.codegen();
+                let expr = self.codegen_expression(e);
                 atoms.extend(expr);
                 atoms.extend(vec![wasm!(call), Atom("$i".to_owned())]);
             }
@@ -68,40 +64,36 @@ impl Statement {
         }
         atoms
     }
-}
 
-impl Expression {
-    pub fn codegen(&self) -> Vec<Wexp> {
+    pub fn codegen_expression(&self, expr: &Expression) -> Vec<Wexp> {
         let mut atoms = vec![];
-        match self {
+        match expr {
             Expression::Simple(v) => {
-                let val = v.codegen();
+                let val = self.codegen_value(v);
                 atoms.extend(val);
             }
-            Expression::Add(v, ref e) => {
-                let val = v.codegen();
-                let expr = e.codegen();
-                atoms.extend(val);
-                atoms.extend(expr);
+            Expression::Add(ref v, ref e) => {
+                let expr_l = self.codegen_expression(v);
+                let expr_r = self.codegen_expression(e);
+                atoms.extend(expr_l);
+                atoms.extend(expr_r);
                 atoms.push(Atom("i32.add".to_owned()));
             }
-            Expression::Sub(v, ref e) => {
-                let val = v.codegen();
-                let expr = e.codegen();
-                atoms.extend(val);
-                atoms.extend(expr);
+            Expression::Sub(ref v, ref e) => {
+                let expr_l = self.codegen_expression(v);
+                let expr_r = self.codegen_expression(e);
+                atoms.extend(expr_l);
+                atoms.extend(expr_r);
                 atoms.push(Atom("i32.sub".to_owned()));
             }
             _ => unimplemented!(),
         }
         atoms
     }
-}
 
-impl Value {
-    pub fn codegen(&self) -> Vec<Wexp> {
+    pub fn codegen_value(&self, value: &Value) -> Vec<Wexp> {
         let mut atoms = vec![];
-        match self {
+        match value {
             Value::Integer(i) => {
                 atoms.push(Atom("i32.const".to_owned()));
                 atoms.push(Atom(i.to_string()));
