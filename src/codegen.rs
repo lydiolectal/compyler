@@ -41,7 +41,7 @@ impl CodeGenerator {
         List(module)
     }
 
-    pub fn codegen_def(&self, stmt: &Statement) -> Wexp {
+    pub fn codegen_def_temp(&self, stmt: &Statement) -> Wexp {
         let mut def_wexp: Vec<Wexp> = vec![wasm!("func")];
         if let Statement::Def { name, params, body } = stmt {
             let mut n = Self::prepend_dollar(name.to_owned());
@@ -203,17 +203,17 @@ mod test {
          call $i))",
     }
 
-    // codegen_test! {
-    //     name: test_def,
-    //     text: "def f():\n  print 8",
-    //     wat: "(module \
-    //         (func $i (import \"host\" \"print\") (param i32)) \
-    //         (func $f \
-    //         i32.const 8 \
-    //         call $i) \
-    //         (func (export \"main\") \
-    //         ))",
-    // }
+    codegen_test! {
+        name: test_def,
+        text: "def f():\n  print 8",
+        wat: "(module \
+            (func $i (import \"host\" \"print\") (param i32)) \
+            (func $f \
+            i32.const 8 \
+            call $i) \
+            (func (export \"main\") \
+            ))",
+    }
 
     // delete and burn this
     #[test]
@@ -223,7 +223,7 @@ mod test {
         let def = &program.body.statements[0];
         let codegenerator = CodeGenerator::new(program.clone());
         assert_eq!(
-            codegenerator.codegen_def(def).to_string(),
+            codegenerator.codegen_def_temp(def).to_string(),
             "(func $f \
              i32.const 8 \
              call $i)"
@@ -237,7 +237,7 @@ mod test {
         let def = &program.body.statements[0];
         let codegenerator = CodeGenerator::new(program.clone());
         assert_eq!(
-            codegenerator.codegen_def(def).to_string(),
+            codegenerator.codegen_def_temp(def).to_string(),
             "(func $f \
              (param $n i32) \
              get_local $n \
