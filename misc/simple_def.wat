@@ -4,5 +4,6 @@
         i32.const 8
         call $i)
     (func (export "main")
+    call $f
     )
 )

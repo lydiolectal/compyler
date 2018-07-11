@@ -41,8 +41,22 @@ impl CodeGenerator {
         List(module)
     }
 
-    pub fn codegen_def(&mut self, body: &Body) -> Wexp {
-        unimplemented!();
+    pub fn codegen_def(&self, stmt: &Statement) -> Wexp {
+        let mut def_wexp: Vec<Wexp> = Vec::new();
+        if let Statement::Def { name, params, body } = stmt {
+            let mut n = String::from("$");
+            n.push_str(name);
+            def_wexp.push(wasm!("func"));
+            def_wexp.push(Atom(n));
+            for p in params.iter() {
+                unimplemented!();
+            }
+            let b = self.codegen_body(body);
+            def_wexp.extend(b);
+            List(def_wexp)
+        } else {
+            wasm!("hi!")
+        }
     }
 
     pub fn codegen_body(&self, body: &Body) -> Vec<Wexp> {
@@ -109,6 +123,8 @@ impl CodeGenerator {
 #[cfg(test)]
 mod test {
     use testing::*;
+    // delete and burn this
+    use super::*;
 
     macro_rules! codegen_test {
         (name: $name:ident,text: $text:expr,wat: $expected:expr,) => {
@@ -175,16 +191,31 @@ mod test {
          call $i))",
     }
 
-    codegen_test! {
-        name: test_def,
-        text: "def f():\n  print 8",
-        wat: "(module \
-            (func $i (import \"host\" \"print\") (param i32)) \
-            (func $f \
-            i32.const 8 \
-            call $i) \
-            (func (export \"main\") \
-            ))",
+    // codegen_test! {
+    //     name: test_def,
+    //     text: "def f():\n  print 8",
+    //     wat: "(module \
+    //         (func $i (import \"host\" \"print\") (param i32)) \
+    //         (func $f \
+    //         i32.const 8 \
+    //         call $i) \
+    //         (func (export \"main\") \
+    //         ))",
+    // }
+
+    // delete and burn this
+    #[test]
+    fn test_def() {
+        let text = "def f():\n  print 8";
+        let program = parse(text).unwrap();
+        let def = &program.body.statements[0];
+        let codegenerator = CodeGenerator::new(program.clone());
+        assert_eq!(
+            codegenerator.codegen_def(def).to_string(),
+            "(func $f \
+             i32.const 8 \
+             call $i)"
+        );
     }
 
     /*
