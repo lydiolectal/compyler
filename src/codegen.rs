@@ -42,14 +42,16 @@ impl CodeGenerator {
     }
 
     pub fn codegen_def(&self, stmt: &Statement) -> Wexp {
-        let mut def_wexp: Vec<Wexp> = Vec::new();
+        let mut def_wexp: Vec<Wexp> = vec![wasm!("func")];
         if let Statement::Def { name, params, body } = stmt {
-            let mut n = String::from("$");
-            n.push_str(name);
-            def_wexp.push(wasm!("func"));
+            let mut n = Self::prepend_dollar(name.to_owned());
             def_wexp.push(Atom(n));
-            for p in params.iter() {
-                unimplemented!();
+            for param in params.iter() {
+                let mut p = Self::prepend_dollar(param.to_owned());
+                let mut param_wexp = vec![wasm!("param")];
+                param_wexp.push(Atom(p));
+                param_wexp.push(wasm!(i32));
+                def_wexp.push(List(param_wexp));
             }
             let b = self.codegen_body(body);
             def_wexp.extend(b);
@@ -113,10 +115,20 @@ impl CodeGenerator {
                 atoms.push(Atom(i.to_string()));
             }
             Value::Variable(v) => {
-                Atom(v.to_string());
+                atoms.push(Atom("get_local".to_owned()));
+                let value = Self::prepend_dollar(v.to_owned());
+                atoms.push(Atom(value));
+                //
+                // Atom(v.to_string());
             }
         }
         atoms
+    }
+
+    fn prepend_dollar(name: String) -> String {
+        let mut s = String::from("$");
+        s.push_str(&name);
+        s
     }
 }
 
@@ -205,7 +217,7 @@ mod test {
 
     // delete and burn this
     #[test]
-    fn test_def() {
+    fn test_def_no_params() {
         let text = "def f():\n  print 8";
         let program = parse(text).unwrap();
         let def = &program.body.statements[0];
@@ -214,6 +226,21 @@ mod test {
             codegenerator.codegen_def(def).to_string(),
             "(func $f \
              i32.const 8 \
+             call $i)"
+        );
+    }
+
+    #[test]
+    fn test_def_params() {
+        let text = "def f(n):\n  print n";
+        let program = parse(text).unwrap();
+        let def = &program.body.statements[0];
+        let codegenerator = CodeGenerator::new(program.clone());
+        assert_eq!(
+            codegenerator.codegen_def(def).to_string(),
+            "(func $f \
+             (param $n i32) \
+             get_local $n \
              call $i)"
         );
     }
