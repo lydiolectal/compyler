@@ -29,20 +29,43 @@ impl CodeGenerator {
             List(vec![wasm!(param), wasm!(i32)]),
         ]);
         let mut module = vec![wasm!(module), print];
+        module.extend(self.codegen_defs(&self.program.body));
         let mut main = vec![wasm!(func), List(vec![wasm!(export), wasm!("\"main\"")])];
-        // self.functions.push(self.codegen_def(self.program.body));
-        // for function in self.functions {
-        //     module.push function;
-        // }
         main.extend(self.codegen_body(&self.program.body));
-        // for some other def statements in self.statements
-        // module.push(List(stmt))
         module.push(List(main));
         List(module)
     }
 
-    pub fn codegen_def_temp(&self, stmt: &Statement) -> Wexp {
+    pub fn codegen_defs(&self, body: &Body) -> Vec<Wexp> {
+        body.statements
+            .iter()
+            .filter_map(|stmt| {
+                if let Statement::Def { .. } = stmt {
+                    Some(self.codegen_def(stmt))
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
+    pub fn codegen_body(&self, body: &Body) -> Vec<Wexp> {
+        body.statements
+            .iter()
+            .filter(|stmt| {
+                if let Statement::Def { .. } = stmt {
+                    false
+                } else {
+                    true
+                }
+            })
+            .flat_map(|stmt| self.codegen_statement(stmt))
+            .collect()
+    }
+
+    pub fn codegen_def(&self, stmt: &Statement) -> Wexp {
         let mut def_wexp: Vec<Wexp> = vec![wasm!("func")];
+        // TODO: is there a better way to destructure Def variant?
         if let Statement::Def { name, params, body } = stmt {
             let mut n = Self::prepend_dollar(name.to_owned());
             def_wexp.push(Atom(n));
@@ -53,19 +76,14 @@ impl CodeGenerator {
                 param_wexp.push(wasm!(i32));
                 def_wexp.push(List(param_wexp));
             }
+            // TODO: resolve this.
+            // this disallows functions inside functions I suppose, since
+            // codegen_body skips function definitions.
             let b = self.codegen_body(body);
             def_wexp.extend(b);
-            List(def_wexp)
         } else {
-            wasm!("hi!")
         }
-    }
-
-    pub fn codegen_body(&self, body: &Body) -> Vec<Wexp> {
-        body.statements
-            .iter()
-            .flat_map(|stmt| self.codegen_statement(stmt))
-            .collect()
+        List(def_wexp)
     }
 
     pub fn codegen_statement(&self, stmt: &Statement) -> Vec<Wexp> {
@@ -125,6 +143,7 @@ impl CodeGenerator {
         atoms
     }
 
+    // TODO: change this from taking String to &str
     fn prepend_dollar(name: String) -> String {
         let mut s = String::from("$");
         s.push_str(&name);
@@ -211,7 +230,7 @@ mod test {
             (func $f \
             i32.const 8 \
             call $i) \
-            (func (export \"main\") \
+            (func (export \"main\")\
             ))",
     }
 
@@ -223,7 +242,7 @@ mod test {
         let def = &program.body.statements[0];
         let codegenerator = CodeGenerator::new(program.clone());
         assert_eq!(
-            codegenerator.codegen_def_temp(def).to_string(),
+            codegenerator.codegen_def(def).to_string(),
             "(func $f \
              i32.const 8 \
              call $i)"
@@ -237,7 +256,7 @@ mod test {
         let def = &program.body.statements[0];
         let codegenerator = CodeGenerator::new(program.clone());
         assert_eq!(
-            codegenerator.codegen_def_temp(def).to_string(),
+            codegenerator.codegen_def(def).to_string(),
             "(func $f \
              (param $n i32) \
              get_local $n \
