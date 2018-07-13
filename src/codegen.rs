@@ -24,7 +24,7 @@ impl CodeGenerator {
     pub fn codegen(mut self) -> Wexp {
         let print = List(vec![
             wasm!(func),
-            Atom("$i".to_string()),
+            Atom("$print".to_string()),
             List(vec![wasm!(import), wasm!("\"host\""), wasm!("\"print\"")]),
             List(vec![wasm!(param), wasm!(i32)]),
         ]);
@@ -67,15 +67,18 @@ impl CodeGenerator {
         let mut def_wexp: Vec<Wexp> = vec![wasm!("func")];
         // TODO: is there a better way to destructure Def variant?
         if let Statement::Def { name, params, body } = stmt {
-            let mut n = Self::prepend_dollar(name.to_owned());
+            let mut n = Self::prepend_dollar(name);
             def_wexp.push(Atom(n));
             for param in params.iter() {
-                let mut p = Self::prepend_dollar(param.to_owned());
+                let mut p = Self::prepend_dollar(param);
                 let mut param_wexp = vec![wasm!("param")];
                 param_wexp.push(Atom(p));
                 param_wexp.push(wasm!(i32));
                 def_wexp.push(List(param_wexp));
             }
+            // TODO: don't assume that all functions return integers.
+            let return_type = List(vec![wasm!("result"), wasm!("i32")]);
+            def_wexp.push(return_type);
             // TODO: resolve this.
             // this disallows functions inside functions I suppose, since
             // codegen_body skips function definitions.
@@ -92,7 +95,11 @@ impl CodeGenerator {
             Statement::Print(e) => {
                 let expr = self.codegen_expression(e);
                 atoms.extend(expr);
-                atoms.extend(vec![wasm!(call), Atom("$i".to_owned())]);
+                atoms.extend(vec![wasm!(call), Atom("$print".to_owned())]);
+            }
+            Statement::Return(e) => {
+                let expr = self.codegen_expression(e);
+                atoms.extend(expr);
             }
             _ => unimplemented!(),
         }
@@ -120,6 +127,34 @@ impl CodeGenerator {
                 atoms.extend(expr_r);
                 atoms.push(Atom("i32.sub".to_owned()));
             }
+            Expression::Lt(ref v, ref e) => {
+                let expr_l = self.codegen_expression(v);
+                let expr_r = self.codegen_expression(e);
+                atoms.extend(expr_l);
+                atoms.extend(expr_r);
+                atoms.push(Atom("i32.lt_s".to_owned()));
+            }
+            Expression::Gt(ref v, ref e) => {
+                let expr_l = self.codegen_expression(v);
+                let expr_r = self.codegen_expression(e);
+                atoms.extend(expr_l);
+                atoms.extend(expr_r);
+                atoms.push(Atom("i32.gt_s".to_owned()));
+            }
+            Expression::EqEq(ref v, ref e) => {
+                let expr_l = self.codegen_expression(v);
+                let expr_r = self.codegen_expression(e);
+                atoms.extend(expr_l);
+                atoms.extend(expr_r);
+                atoms.push(Atom("i32.eq".to_owned()));
+            }
+            Expression::Call { name, params } => {
+                for param in params {
+                    atoms.extend(self.codegen_expression(param));
+                }
+                atoms.push(wasm!("call"));
+                atoms.push(wasm!(&Self::prepend_dollar(name)));
+            }
             _ => unimplemented!(),
         }
         atoms
@@ -134,19 +169,16 @@ impl CodeGenerator {
             }
             Value::Variable(v) => {
                 atoms.push(Atom("get_local".to_owned()));
-                let value = Self::prepend_dollar(v.to_owned());
+                let value = Self::prepend_dollar(v);
                 atoms.push(Atom(value));
-                //
-                // Atom(v.to_string());
             }
         }
         atoms
     }
 
-    // TODO: change this from taking String to &str
-    fn prepend_dollar(name: String) -> String {
+    fn prepend_dollar(name: &str) -> String {
         let mut s = String::from("$");
-        s.push_str(&name);
+        s.push_str(name);
         s
     }
 }
@@ -154,8 +186,6 @@ impl CodeGenerator {
 #[cfg(test)]
 mod test {
     use testing::*;
-    // delete and burn this
-    use super::*;
 
     macro_rules! codegen_test {
         (name: $name:ident,text: $text:expr,wat: $expected:expr,) => {
@@ -172,26 +202,26 @@ mod test {
     codegen_test! {
         name: empty_program,
         text: "",
-        wat: "(module (func $i (import \"host\" \"print\") (param i32)) (func (export \"main\")))",
+        wat: "(module (func $print (import \"host\" \"print\") (param i32)) (func (export \"main\")))",
     }
 
     codegen_test! {
         name: print_int,
         text: "print 24",
-        wat: "(module (func $i (import \"host\" \"print\") \
-         (param i32)) (func (export \"main\") i32.const 24 call $i))",
+        wat: "(module (func $print (import \"host\" \"print\") \
+         (param i32)) (func (export \"main\") i32.const 24 call $print))",
     }
 
     codegen_test! {
         name: add_int,
         text: "print 1 + 2",
         wat: "(module \
-         (func $i (import \"host\" \"print\") (param i32)) \
+         (func $print (import \"host\" \"print\") (param i32)) \
          (func (export \"main\") \
          i32.const 1 \
          i32.const 2 \
          i32.add \
-         call $i\
+         call $print\
          ))",
     }
 
@@ -199,12 +229,12 @@ mod test {
         name: sub_int,
         text: "print 2 - 1",
         wat: "(module \
-         (func $i (import \"host\" \"print\") (param i32)) \
+         (func $print (import \"host\" \"print\") (param i32)) \
          (func (export \"main\") \
          i32.const 2 \
          i32.const 1 \
          i32.sub \
-         call $i\
+         call $print\
          ))",
     }
 
@@ -212,68 +242,70 @@ mod test {
         name: add_and_sub_int,
         text: "print 2 + 2 - 3",
         wat: "(module \
-         (func $i (import \"host\" \"print\") (param i32)) \
+         (func $print (import \"host\" \"print\") (param i32)) \
          (func (export \"main\") \
          i32.const 2 \
          i32.const 2 \
          i32.const 3 \
          i32.sub \
          i32.add \
-         call $i))",
+         call $print))",
     }
 
     codegen_test! {
         name: test_def,
-        text: "def f():\n  print 8",
+        text: "def f():\n  return 8",
         wat: "(module \
-            (func $i (import \"host\" \"print\") (param i32)) \
+            (func $print (import \"host\" \"print\") (param i32)) \
             (func $f \
-            i32.const 8 \
-            call $i) \
+            (result i32) \
+            i32.const 8) \
             (func (export \"main\")\
             ))",
     }
 
-    // delete and burn this
-    #[test]
-    fn test_def_no_params() {
-        let text = "def f():\n  print 8";
-        let program = parse(text).unwrap();
-        let def = &program.body.statements[0];
-        let codegenerator = CodeGenerator::new(program.clone());
-        assert_eq!(
-            codegenerator.codegen_def(def).to_string(),
-            "(func $f \
-             i32.const 8 \
-             call $i)"
-        );
+    codegen_test! {
+        name: test_def_param,
+        text: "def f(n):\n  return n",
+        wat: "(module \
+            (func $print (import \"host\" \"print\") (param i32)) \
+            (func $f \
+            (param $n i32) \
+            (result i32) \
+            get_local $n) \
+            (func (export \"main\")\
+            ))",
     }
 
-    #[test]
-    fn test_def_params() {
-        let text = "def f(n):\n  print n";
-        let program = parse(text).unwrap();
-        let def = &program.body.statements[0];
-        let codegenerator = CodeGenerator::new(program.clone());
-        assert_eq!(
-            codegenerator.codegen_def(def).to_string(),
-            "(func $f \
-             (param $n i32) \
-             get_local $n \
-             call $i)"
-        );
+    codegen_test! {
+        name: test_def_params,
+        text: "def f(m, n, o, p):\n  return p",
+        wat: "(module \
+            (func $print (import \"host\" \"print\") (param i32)) \
+            (func $f \
+            (param $m i32) \
+            (param $n i32) \
+            (param $o i32) \
+            (param $p i32) \
+            (result i32) \
+            get_local $p) \
+            (func (export \"main\")\
+            ))",
     }
 
-    /*
-        (module
-            (func $i
-                (import "host" "print")
-                (param i32))
-            // everything not inside a "def" block is in main.
-            // everything in "def" has its own func (export)
-            (func (export "main")
-                i32.const 42
-                call $i)
-        )
-        */
+    codegen_test! {
+        name: function_call,
+        text: "def f(a, b):\n  return a + b\nprint f(2, 3)",
+        wat: "(module \
+            (func $print (import \"host\" \"print\") (param i32)) \
+            (func $f (param $a i32) (param $b i32) (result i32) \
+            get_local $a \
+            get_local $b \
+            i32.add) \
+            (func (export \"main\") \
+            i32.const 2 \
+            i32.const 3 \
+            call $f \
+            call $print))",
+    }
 }
