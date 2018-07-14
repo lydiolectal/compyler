@@ -101,6 +101,27 @@ impl CodeGenerator {
                 let expr = self.codegen_expression(e);
                 atoms.extend(expr);
             }
+            Statement::If {
+                condition,
+                body,
+                elif,
+                else_body,
+            } => {
+                let cond_wexp = self.codegen_expression(condition);
+                atoms.extend(cond_wexp);
+                atoms.push(wasm!("if"));
+                // TODO: don't assume that all if/else return integers.
+                let return_type = List(vec![wasm!("result"), wasm!("i32")]);
+                atoms.push(return_type);
+                let body_wexp = self.codegen_body(body);
+                atoms.extend(body_wexp);
+                if let Some(b) = else_body {
+                    atoms.push(wasm!("else"));
+                    let else_wexp = self.codegen_body(b);
+                    atoms.extend(else_wexp);
+                }
+                atoms.push(wasm!("end"));
+            }
             _ => unimplemented!(),
         }
         atoms
@@ -305,6 +326,26 @@ mod test {
             (func (export \"main\") \
             i32.const 2 \
             i32.const 3 \
+            call $f \
+            call $print))",
+    }
+
+    codegen_test! {
+        name: if_else,
+        text: "def f(a):\n  if a < 5:\n    return 0\n  else:\n    return 1\nprint f(1)",
+        wat: "(module \
+            (func $print (import \"host\" \"print\") (param i32)) \
+            (func $f (param $a i32) (result i32) \
+            get_local $a \
+            i32.const 5 \
+            i32.lt_s \
+            if (result i32) \
+            i32.const 0 \
+            else \
+            i32.const 1 \
+            end) \
+            (func (export \"main\") \
+            i32.const 1 \
             call $f \
             call $print))",
     }
