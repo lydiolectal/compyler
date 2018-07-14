@@ -352,7 +352,7 @@ mod test {
 
     codegen_test! {
         name: fib,
-        text: "def fib(n):\n  if n < 2:\n    return n\n  else:\n    return fib(n - 2) + fib(n - 1)",
+        text: "def fib(n):\n  if n < 2:\n    return n\n  else:\n    return fib(n - 2) + fib(n - 1)\nprint fib(4)",
         wat: "(module \
             (func $print (import \"host\" \"print\") (param i32)) \
             (func $fib (param $n i32) (result i32) \
@@ -372,6 +372,9 @@ mod test {
             call $fib \
             i32.add \
             end) \
-            (func (export \"main\")))",
+            (func (export \"main\") \
+            i32.const 4 \
+            call $fib \
+            call $print))",
     }
 }

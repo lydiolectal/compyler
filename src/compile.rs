@@ -139,4 +139,21 @@ mod test {
         input:  "print 7\nprint 1 + 2",
         output: ["i32:7", "i32:3"],
     }
+
+    test! {
+        name:   function_call,
+        input:  "def f(a, b):\n  return a + b\nprint f(2, 3)",
+        output: ["i32:5"],
+    }
+
+    test! {
+        name: if_else,
+        input: "def f(a):\n  if a < 5:\n    return 0\n  else:\n    return 1\nprint f(1)",
+        output: ["i32:0"],
+    }
+    test! {
+        name: fib,
+        input: "def fib(n):\n  if n < 2:\n    return n\n  else:\n    return fib(n - 2) + fib(n - 1)\nprint fib(4)",
+        output: ["i32:3"],
+    }
 }
