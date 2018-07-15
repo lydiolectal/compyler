@@ -410,6 +410,47 @@ mod test {
     }
 
     codegen_test! {
+        name: elif_multiple,
+        text: "def f(n):\n if n < 5:\n  return 0\n elif n < 10:\n  return 1\n elif n < 15:\
+        \n  return 2  \n else:\n  return 3\nprint f(4)\nprint f(8)\nprint f(81)",
+        wat: "(module \
+            (func $print (import \"host\" \"print\") (param i32)) \
+            (func $f (param $n i32) (result i32) \
+                get_local $n \
+                i32.const 5 \
+                i32.lt_s \
+                if (result i32) \
+                    i32.const 0 \
+                else \
+                    get_local $n \
+                    i32.const 10 \
+                    i32.lt_s \
+                    if (result i32) \
+                        i32.const 1 \
+                    else \
+                        get_local $n \
+                        i32.const 15 \
+                        i32.lt_s \
+                        if (result i32) \
+                            i32.const 2 \
+                        else \
+                            i32.const 3 \
+                        end \
+                    end \
+                end) \
+            (func (export \"main\") \
+                i32.const 4 \
+                call $f \
+                call $print \
+                i32.const 8 \
+                call $f \
+                call $print \
+                i32.const 81 \
+                call $f \
+                call $print))",
+    }
+
+    codegen_test! {
         name: fib,
         text: "def fib(n):\n  if n < 2:\n    return n\n  else:\n    return fib(n - 2) + fib(n - 1)\
         \nprint fib(4)",

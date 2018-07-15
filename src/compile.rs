@@ -151,6 +151,14 @@ mod test {
         input: "def f(a):\n  if a < 5:\n    return 0\n  else:\n    return 1\nprint f(1)",
         output: ["i32:0"],
     }
+
+    test! {
+        name: elif,
+        input: "def f(n):\n if n < 5:\n  return 0\n elif n < 10:\n  return 1\n elif n < 15:\
+        \n  return 2  \n else:\n  return 3\nprint f(4)\nprint f(8)\nprint f(81)",
+        output: ["i32:0", "i32:1", "i32:3"],
+    }
+
     test! {
         name: fib,
         input: "def fib(n):\n  if n < 2:\n    return n\n  else:\n    return fib(n - 2) + fib(n - 1)\nprint fib(4)",
