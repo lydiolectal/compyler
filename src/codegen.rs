@@ -84,7 +84,6 @@ impl CodeGenerator {
             // codegen_body skips function definitions.
             let b = self.codegen_body(body);
             def_wexp.extend(b);
-        } else {
         }
         List(def_wexp)
     }
@@ -101,30 +100,55 @@ impl CodeGenerator {
                 let expr = self.codegen_expression(e);
                 atoms.extend(expr);
             }
-            Statement::If {
-                condition,
-                body,
-                elif,
-                else_body,
-            } => {
-                let cond_wexp = self.codegen_expression(condition);
-                atoms.extend(cond_wexp);
-                atoms.push(wasm!("if"));
-                // TODO: don't assume that all if/else return integers.
-                let return_type = List(vec![wasm!("result"), wasm!("i32")]);
-                atoms.push(return_type);
-                let body_wexp = self.codegen_body(body);
-                atoms.extend(body_wexp);
-                if let Some(b) = else_body {
-                    atoms.push(wasm!("else"));
-                    let else_wexp = self.codegen_body(b);
-                    atoms.extend(else_wexp);
-                }
-                atoms.push(wasm!("end"));
+            Statement::If { .. } => {
+                let if_wexp = self.codegen_if(stmt);
+                atoms.extend(if_wexp);
             }
             _ => unimplemented!(),
         }
         atoms
+    }
+
+    pub fn codegen_if(&self, stmt: &Statement) -> Vec<Wexp> {
+        let mut if_wexp = Vec::new();
+        if let Statement::If {
+            condition,
+            body,
+            elif,
+            else_body,
+        } = stmt
+        {
+            let cond_wexp = self.codegen_expression(condition);
+            if_wexp.extend(cond_wexp);
+            if_wexp.push(wasm!("if"));
+            // TODO: don't assume that all if/else return integers.
+            let return_type = List(vec![wasm!("result"), wasm!("i32")]);
+            if_wexp.push(return_type);
+            let body_wexp = self.codegen_body(body);
+            if_wexp.extend(body_wexp);
+            if !elif.is_empty() {
+                let mut elif_clone = elif.clone();
+                let else_clone = else_body.clone();
+                let (elif_condition, elif_body) = elif_clone.remove(0);
+                let elif_stmt = Statement::If {
+                    condition: elif_condition,
+                    body: elif_body,
+                    elif: elif_clone,
+                    else_body: else_clone,
+                };
+                let mut elif_wexp = vec![wasm!("else")];
+                elif_wexp.extend(self.codegen_if(&elif_stmt));
+                if_wexp.extend(elif_wexp);
+            } else {
+                if let Some(b) = else_body {
+                    if_wexp.push(wasm!("else"));
+                    let else_wexp = self.codegen_body(b);
+                    if_wexp.extend(else_wexp);
+                }
+            }
+            if_wexp.push(wasm!("end"));
+        }
+        if_wexp
     }
 
     pub fn codegen_expression(&self, expr: &Expression) -> Vec<Wexp> {
@@ -223,7 +247,8 @@ mod test {
     codegen_test! {
         name: empty_program,
         text: "",
-        wat: "(module (func $print (import \"host\" \"print\") (param i32)) (func (export \"main\")))",
+        wat: "(module (func $print (import \"host\" \"print\") (param i32)) \
+        (func (export \"main\")))",
     }
 
     codegen_test! {
@@ -351,8 +376,43 @@ mod test {
     }
 
     codegen_test! {
+        name: elif,
+        text: "def f(n):\n if n < 5:\n  return 0\n elif n < 10:\n  return 1\n else:\
+        \n  return 2\nprint f(4)\nprint f(8)\nprint f(11)",
+        wat: "(module \
+            (func $print (import \"host\" \"print\") (param i32)) \
+            (func $f (param $n i32) (result i32) \
+                get_local $n \
+                i32.const 5 \
+                i32.lt_s \
+                if (result i32) \
+                    i32.const 0 \
+                else \
+                    get_local $n \
+                    i32.const 10 \
+                    i32.lt_s \
+                    if (result i32) \
+                        i32.const 1 \
+                    else \
+                        i32.const 2 \
+                    end \
+                end) \
+            (func (export \"main\") \
+                i32.const 4 \
+                call $f \
+                call $print \
+                i32.const 8 \
+                call $f \
+                call $print \
+                i32.const 11 \
+                call $f \
+                call $print))",
+    }
+
+    codegen_test! {
         name: fib,
-        text: "def fib(n):\n  if n < 2:\n    return n\n  else:\n    return fib(n - 2) + fib(n - 1)\nprint fib(4)",
+        text: "def fib(n):\n  if n < 2:\n    return n\n  else:\n    return fib(n - 2) + fib(n - 1)\
+        \nprint fib(4)",
         wat: "(module \
             (func $print (import \"host\" \"print\") (param i32)) \
             (func $fib (param $n i32) (result i32) \
