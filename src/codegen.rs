@@ -186,6 +186,20 @@ impl CodeGenerator {
                 atoms.extend(expr_r);
                 atoms.push(Atom("i32.gt_s".to_owned()));
             }
+            Expression::Leq(ref v, ref e) => {
+                let expr_l = self.codegen_expression(v);
+                let expr_r = self.codegen_expression(e);
+                atoms.extend(expr_l);
+                atoms.extend(expr_r);
+                atoms.push(Atom("i32.le_s".to_owned()));
+            }
+            Expression::Geq(ref v, ref e) => {
+                let expr_l = self.codegen_expression(v);
+                let expr_r = self.codegen_expression(e);
+                atoms.extend(expr_l);
+                atoms.extend(expr_r);
+                atoms.push(Atom("i32.ge_s".to_owned()));
+            }
             Expression::EqEq(ref v, ref e) => {
                 let expr_l = self.codegen_expression(v);
                 let expr_r = self.codegen_expression(e);
@@ -259,6 +273,14 @@ mod test {
     }
 
     codegen_test! {
+        name: print_leq,
+        text: "print 8 <= 8",
+        wat: "(module (func $print (import \"host\" \"print\") \
+         (param i32)) (func (export \"main\") i32.const 8 i32.const 8 \
+         i32.le_s call $print))",
+    }
+
+    codegen_test! {
         name: add_int,
         text: "print 1 + 2",
         wat: "(module \
@@ -299,7 +321,7 @@ mod test {
     }
 
     codegen_test! {
-        name: test_def,
+        name: codegen_def,
         text: "def f():\n  return 8",
         wat: "(module \
             (func $print (import \"host\" \"print\") (param i32)) \
@@ -311,7 +333,7 @@ mod test {
     }
 
     codegen_test! {
-        name: test_def_param,
+        name: def_param,
         text: "def f(n):\n  return n",
         wat: "(module \
             (func $print (import \"host\" \"print\") (param i32)) \
@@ -324,7 +346,7 @@ mod test {
     }
 
     codegen_test! {
-        name: test_def_params,
+        name: def_params,
         text: "def f(m, n, o, p):\n  return p",
         wat: "(module \
             (func $print (import \"host\" \"print\") (param i32)) \

@@ -184,6 +184,16 @@ impl Parser {
                 let e = self.parse_term()?;
                 Ok(Expression::Gt(Box::new(t), Box::new(e)))
             }
+            Leq => {
+                self.next();
+                let e = self.parse_term()?;
+                Ok(Expression::Leq(Box::new(t), Box::new(e)))
+            }
+            Geq => {
+                self.next();
+                let e = self.parse_term()?;
+                Ok(Expression::Geq(Box::new(t), Box::new(e)))
+            }
             _ => Ok(t),
         }
     }
@@ -428,6 +438,21 @@ mod test {
         text: "print 1 < 2",
         program: [Statement::Print(
             Expression::Lt(
+                Box::new(Expression::Simple(
+                    Value::Integer(1)
+                )),
+                Box::new(Expression::Simple(
+                    Value::Integer(2)
+                ))
+            )
+        )],
+    }
+
+    parse_test! {
+        name: print_geq,
+        text: "print 1>=2",
+        program: [Statement::Print(
+            Expression::Geq(
                 Box::new(Expression::Simple(
                     Value::Integer(1)
                 )),

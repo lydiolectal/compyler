@@ -141,6 +141,12 @@ mod test {
     }
 
     test! {
+        name: print_leq,
+        input: "print 8 <= 8",
+        output: ["i32:1"],
+    }
+
+    test! {
         name:   function_call,
         input:  "def f(a, b):\n  return a + b\nprint f(2, 3)",
         output: ["i32:5"],

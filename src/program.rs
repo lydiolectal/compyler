@@ -33,6 +33,8 @@ pub enum Expression {
     EqEq(Box<Expression>, Box<Expression>),
     Lt(Box<Expression>, Box<Expression>),
     Gt(Box<Expression>, Box<Expression>),
+    Leq(Box<Expression>, Box<Expression>),
+    Geq(Box<Expression>, Box<Expression>),
     Add(Box<Expression>, Box<Expression>),
     Sub(Box<Expression>, Box<Expression>),
     Call {

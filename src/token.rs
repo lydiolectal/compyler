@@ -19,6 +19,8 @@ pub enum TokenKind {
     EqEq,
     Lt,
     Gt,
+    Leq,
+    Geq,
     Plus,
     Minus,
 }

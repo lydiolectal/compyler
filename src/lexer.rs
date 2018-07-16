@@ -165,16 +165,8 @@ impl Lexer {
                     let t = self.make_token(TokenKind::Comma);
                     tokens.push(t);
                 }
-                '<' => {
-                    self.next();
-                    let t = self.make_token(TokenKind::Lt);
-                    tokens.push(t);
-                }
-                '>' => {
-                    self.next();
-                    let t = self.make_token(TokenKind::Gt);
-                    tokens.push(t);
-                }
+                '<' => tokens.push(self.lex_lt()?),
+                '>' => tokens.push(self.lex_gt()?),
                 '=' => tokens.push(self.lex_equals()?),
                 _ => return Err(Error::UnexpectedStartOfToken(c)),
             }
@@ -264,6 +256,24 @@ impl Lexer {
             Ok(self.make_token(TokenKind::EqEq))
         } else {
             Err(Error::UnexpectedCharacter(self.current))
+        }
+    }
+
+    fn lex_lt(&mut self) -> Result<Token, Error> {
+        if self.next() == Some('=') {
+            self.next();
+            Ok(self.make_token(TokenKind::Leq))
+        } else {
+            Ok(self.make_token(TokenKind::Lt))
+        }
+    }
+
+    fn lex_gt(&mut self) -> Result<Token, Error> {
+        if self.next() == Some('=') {
+            self.next();
+            Ok(self.make_token(TokenKind::Geq))
+        } else {
+            Ok(self.make_token(TokenKind::Gt))
         }
     }
 }
@@ -623,6 +633,28 @@ mod test {
             Token {
                 kind: TokenKind::Gt,
                 lexeme: ">".to_owned(),
+            }
+        ],
+    }
+
+    token_test! {
+        name: leq,
+        text: "<=",
+        token: [
+            Token {
+                kind: TokenKind::Leq,
+                lexeme: "<=".to_owned(),
+            }
+        ],
+    }
+
+    token_test! {
+        name: geq,
+        text: ">=",
+        token: [
+            Token {
+                kind: TokenKind::Geq,
+                lexeme: ">=".to_owned(),
             }
         ],
     }
