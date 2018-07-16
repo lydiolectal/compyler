@@ -172,6 +172,20 @@ impl CodeGenerator {
                 atoms.extend(expr_r);
                 atoms.push(Atom("i32.sub".to_owned()));
             }
+            Expression::Mult(ref v, ref e) => {
+                let expr_l = self.codegen_expression(v);
+                let expr_r = self.codegen_expression(e);
+                atoms.extend(expr_l);
+                atoms.extend(expr_r);
+                atoms.push(Atom("i32.mul".to_owned()));
+            }
+            Expression::Div(ref v, ref e) => {
+                let expr_l = self.codegen_expression(v);
+                let expr_r = self.codegen_expression(e);
+                atoms.extend(expr_l);
+                atoms.extend(expr_r);
+                atoms.push(Atom("i32.div_s".to_owned()));
+            }
             Expression::Lt(ref v, ref e) => {
                 let expr_l = self.codegen_expression(v);
                 let expr_r = self.codegen_expression(e);
@@ -302,6 +316,19 @@ mod test {
          i32.const 2 \
          i32.const 1 \
          i32.sub \
+         call $print\
+         ))",
+    }
+
+    codegen_test! {
+        name: div_int,
+        text: "print 9 / 3",
+        wat: "(module \
+         (func $print (import \"host\" \"print\") (param i32)) \
+         (func (export \"main\") \
+         i32.const 9 \
+         i32.const 3 \
+         i32.div_s \
          call $print\
          ))",
     }

@@ -37,6 +37,8 @@ pub enum Expression {
     Geq(Box<Expression>, Box<Expression>),
     Add(Box<Expression>, Box<Expression>),
     Sub(Box<Expression>, Box<Expression>),
+    Mult(Box<Expression>, Box<Expression>),
+    Div(Box<Expression>, Box<Expression>),
     Call {
         name: String,
         params: Vec<Expression>,

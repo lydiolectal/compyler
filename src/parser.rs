@@ -199,7 +199,7 @@ impl Parser {
     }
 
     fn parse_term(&mut self) -> Result<Expression, Error> {
-        let c = self.parse_primary()?;
+        let c = self.parse_product()?;
         match self.current.kind {
             Plus => {
                 self.next();
@@ -210,6 +210,23 @@ impl Parser {
                 self.next();
                 let e = self.parse_term()?;
                 Ok(Expression::Sub(Box::new(c), Box::new(e)))
+            }
+            _ => Ok(c),
+        }
+    }
+
+    fn parse_product(&mut self) -> Result<Expression, Error> {
+        let c = self.parse_primary()?;
+        match self.current.kind {
+            Mult => {
+                self.next();
+                let e = self.parse_product()?;
+                Ok(Expression::Mult(Box::new(c), Box::new(e)))
+            }
+            Div => {
+                self.next();
+                let e = self.parse_product()?;
+                Ok(Expression::Div(Box::new(c), Box::new(e)))
             }
             _ => Ok(c),
         }
@@ -348,6 +365,29 @@ mod test {
                 Expression::Sub(
                     Box::new(Expression::Simple(
                         Value::Integer(2))),
+                    Box::new(Expression::Simple(
+                        Value::Integer(1)
+                        )
+                    )
+                )
+            )
+        ],
+    }
+
+    parse_test! {
+        name:    print_mult,
+        text:    "print 2*2 - 1",
+        program: [
+            Statement::Print(
+                Expression::Sub(
+                    Box::new(Expression::Mult(
+                        Box::new(Expression::Simple(
+                            Value::Integer(2)
+                        )),
+                        Box::new(Expression::Simple(
+                            Value::Integer(2)
+                        ))
+                    )),
                     Box::new(Expression::Simple(
                         Value::Integer(1)
                         )

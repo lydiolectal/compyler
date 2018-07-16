@@ -23,6 +23,8 @@ pub enum TokenKind {
     Geq,
     Plus,
     Minus,
+    Mult,
+    Div,
 }
 
 #[derive(Clone, Debug, PartialEq)]

@@ -165,6 +165,16 @@ impl Lexer {
                     let t = self.make_token(TokenKind::Comma);
                     tokens.push(t);
                 }
+                '*' => {
+                    self.next();
+                    let t = self.make_token(TokenKind::Mult);
+                    tokens.push(t);
+                }
+                '/' => {
+                    self.next();
+                    let t = self.make_token(TokenKind::Div);
+                    tokens.push(t);
+                }
                 '<' => tokens.push(self.lex_lt()?),
                 '>' => tokens.push(self.lex_gt()?),
                 '=' => tokens.push(self.lex_equals()?),
@@ -633,6 +643,28 @@ mod test {
             Token {
                 kind: TokenKind::Gt,
                 lexeme: ">".to_owned(),
+            }
+        ],
+    }
+
+    token_test! {
+        name: mult,
+        text: "*",
+        token: [
+            Token {
+                kind: TokenKind::Mult,
+                lexeme: "*".to_owned(),
+            }
+        ],
+    }
+
+    token_test! {
+        name: div,
+        text: "/",
+        token: [
+            Token {
+                kind: TokenKind::Div,
+                lexeme: "/".to_owned(),
             }
         ],
     }
