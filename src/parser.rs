@@ -120,7 +120,7 @@ impl Parser {
     }
 
     fn parse_if(&mut self) -> Result<Statement, Error> {
-        let condition = self.parse_expression()?;
+        let condition = self.parse_comparison()?;
         self.expect(TokenKind::Colon)?;
         self.expect(TokenKind::Newline)?;
         self.expect(TokenKind::Indent)?;
@@ -140,7 +140,7 @@ impl Parser {
         loop {
             if self.current.kind == TokenKind::Elif {
                 self.next();
-                let condition = self.parse_expression()?;
+                let condition = self.parse_comparison()?;
                 self.expect(TokenKind::Colon)?;
                 self.expect(TokenKind::Newline)?;
                 self.expect(TokenKind::Indent)?;
@@ -167,31 +167,48 @@ impl Parser {
     }
 
     fn parse_expression(&mut self) -> Result<Expression, Error> {
+        let c = self.parse_comparison()?;
+        match self.current.kind {
+            And => {
+                self.next();
+                let e = self.parse_expression()?;
+                Ok(Expression::And(Box::new(c), Box::new(e)))
+            }
+            Or => {
+                self.next();
+                let e = self.parse_expression()?;
+                Ok(Expression::Or(Box::new(c), Box::new(e)))
+            }
+            _ => Ok(c),
+        }
+    }
+
+    fn parse_comparison(&mut self) -> Result<Expression, Error> {
         let t = self.parse_term()?;
         match self.current.kind {
             EqEq => {
                 self.next();
-                let e = self.parse_term()?;
+                let e = self.parse_comparison()?;
                 Ok(Expression::EqEq(Box::new(t), Box::new(e)))
             }
             Lt => {
                 self.next();
-                let e = self.parse_term()?;
+                let e = self.parse_comparison()?;
                 Ok(Expression::Lt(Box::new(t), Box::new(e)))
             }
             Gt => {
                 self.next();
-                let e = self.parse_term()?;
+                let e = self.parse_comparison()?;
                 Ok(Expression::Gt(Box::new(t), Box::new(e)))
             }
             Leq => {
                 self.next();
-                let e = self.parse_term()?;
+                let e = self.parse_comparison()?;
                 Ok(Expression::Leq(Box::new(t), Box::new(e)))
             }
             Geq => {
                 self.next();
-                let e = self.parse_term()?;
+                let e = self.parse_comparison()?;
                 Ok(Expression::Geq(Box::new(t), Box::new(e)))
             }
             _ => Ok(t),
@@ -252,7 +269,7 @@ impl Parser {
         self.next();
         let mut params = Vec::new();
         while self.current.kind != ParenR {
-            let e = self.parse_expression()?;
+            let e = self.parse_comparison()?;
             params.push(e);
             match self.current.kind {
                 Comma => self.next(),
@@ -548,6 +565,31 @@ mod test {
                 )),
                 Box::new(Expression::Simple(
                     Value::Integer(2)
+                ))
+            )
+        )],
+    }
+
+    parse_test! {
+        name: print_and,
+        text: "print 1>=2 and 2<7",
+        program: [Statement::Print(
+            Expression::And(
+                Box::new(Expression::Geq(
+                    Box::new(Expression::Simple(
+                        Value::Integer(1)
+                    )),
+                    Box::new(Expression::Simple(
+                        Value::Integer(2)
+                    ))
+                )),
+                Box::new(Expression::Lt(
+                    Box::new(Expression::Simple(
+                        Value::Integer(2)
+                    )),
+                    Box::new(Expression::Simple(
+                        Value::Integer(7)
+                    ))
                 ))
             )
         )],

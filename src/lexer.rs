@@ -215,6 +215,8 @@ impl Lexer {
             "print" => self.make_token(TokenKind::Print),
             "def" => self.make_token(TokenKind::Def),
             "return" => self.make_token(TokenKind::Return),
+            "or" => self.make_token(TokenKind::Or),
+            "and" => self.make_token(TokenKind::And),
             _ => self.make_token(TokenKind::Identifier),
         }
     }
@@ -681,6 +683,28 @@ mod test {
             Token {
                 kind: TokenKind::Mod,
                 lexeme: "%".to_owned(),
+            }
+        ],
+    }
+
+    token_test! {
+        name: and,
+        text: "and",
+        token: [
+            Token {
+                kind: TokenKind::And,
+                lexeme: "and".to_owned(),
+            }
+        ],
+    }
+
+    token_test! {
+        name: or,
+        text: "or",
+        token: [
+            Token {
+                kind: TokenKind::Or,
+                lexeme: "or".to_owned(),
             }
         ],
     }

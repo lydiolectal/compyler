@@ -228,6 +228,20 @@ impl CodeGenerator {
                 atoms.extend(expr_r);
                 atoms.push(Atom("i32.eq".to_owned()));
             }
+            Expression::And(ref v, ref e) => {
+                let expr_l = self.codegen_expression(v);
+                let expr_r = self.codegen_expression(e);
+                atoms.extend(expr_l);
+                atoms.extend(expr_r);
+                atoms.push(Atom("i32.and".to_owned()));
+            }
+            Expression::Or(ref v, ref e) => {
+                let expr_l = self.codegen_expression(v);
+                let expr_r = self.codegen_expression(e);
+                atoms.extend(expr_l);
+                atoms.extend(expr_r);
+                atoms.push(Atom("i32.or".to_owned()));
+            }
             Expression::Call { name, params } => {
                 for param in params {
                     atoms.extend(self.codegen_expression(param));
@@ -349,6 +363,23 @@ mod test {
          i32.const 13 \
          i32.const 7 \
          i32.rem_s \
+         call $print\
+         ))",
+    }
+
+    codegen_test! {
+        name: print_and,
+        text: "print 1>=2 and 2<7",
+        wat: "(module \
+         (func $print (import \"host\" \"print\") (param i32)) \
+         (func (export \"main\") \
+         i32.const 1 \
+         i32.const 2 \
+         i32.ge_s \
+         i32.const 2 \
+         i32.const 7 \
+         i32.lt_s \
+         i32.and \
          call $print\
          ))",
     }

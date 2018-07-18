@@ -40,6 +40,8 @@ pub enum Expression {
     Mult(Box<Expression>, Box<Expression>),
     Div(Box<Expression>, Box<Expression>),
     Mod(Box<Expression>, Box<Expression>),
+    And(Box<Expression>, Box<Expression>),
+    Or(Box<Expression>, Box<Expression>),
     Call {
         name: String,
         params: Vec<Expression>,

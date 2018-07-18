@@ -159,6 +159,12 @@ mod test {
     }
 
     test! {
+        name: print_and,
+        input: "print 1>=2 and 2<7",
+        output: ["i32:0"],
+    }
+
+    test! {
         name:   function_call,
         input:  "def f(a, b):\n  return a + b\nprint f(2, 3)",
         output: ["i32:5"],
