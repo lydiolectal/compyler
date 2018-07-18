@@ -186,6 +186,13 @@ impl CodeGenerator {
                 atoms.extend(expr_r);
                 atoms.push(Atom("i32.div_s".to_owned()));
             }
+            Expression::Mod(ref v, ref e) => {
+                let expr_l = self.codegen_expression(v);
+                let expr_r = self.codegen_expression(e);
+                atoms.extend(expr_l);
+                atoms.extend(expr_r);
+                atoms.push(Atom("i32.rem_s".to_owned()));
+            }
             Expression::Lt(ref v, ref e) => {
                 let expr_l = self.codegen_expression(v);
                 let expr_r = self.codegen_expression(e);
@@ -329,6 +336,19 @@ mod test {
          i32.const 9 \
          i32.const 3 \
          i32.div_s \
+         call $print\
+         ))",
+    }
+
+    codegen_test! {
+        name: mod_int,
+        text: "print 13 % 7",
+        wat: "(module \
+         (func $print (import \"host\" \"print\") (param i32)) \
+         (func (export \"main\") \
+         i32.const 13 \
+         i32.const 7 \
+         i32.rem_s \
          call $print\
          ))",
     }

@@ -153,6 +153,12 @@ mod test {
     }
 
     test! {
+        name: print_mod,
+        input: "print 13 % 7",
+        output: ["i32:6"],
+    }
+
+    test! {
         name:   function_call,
         input:  "def f(a, b):\n  return a + b\nprint f(2, 3)",
         output: ["i32:5"],
