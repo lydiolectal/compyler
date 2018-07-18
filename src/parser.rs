@@ -228,6 +228,11 @@ impl Parser {
                 let e = self.parse_product()?;
                 Ok(Expression::Div(Box::new(c), Box::new(e)))
             }
+            Mod => {
+                self.next();
+                let e = self.parse_product()?;
+                Ok(Expression::Mod(Box::new(c), Box::new(e)))
+            }
             _ => Ok(c),
         }
     }
@@ -392,6 +397,51 @@ mod test {
                         Value::Integer(1)
                         )
                     )
+                )
+            )
+        ],
+    }
+
+    parse_test! {
+        name:    print_mod_sub,
+        text:    "print 2%2 - 1",
+        program: [
+            Statement::Print(
+                Expression::Sub(
+                    Box::new(Expression::Mod(
+                        Box::new(Expression::Simple(
+                            Value::Integer(2)
+                        )),
+                        Box::new(Expression::Simple(
+                            Value::Integer(2)
+                        ))
+                    )),
+                    Box::new(Expression::Simple(
+                        Value::Integer(1)
+                        )
+                    )
+                )
+            )
+        ],
+    }
+
+    parse_test! {
+        name:    print_mod_mult,
+        text:    "print 5 % 2*3",
+        program: [
+            Statement::Print(
+                Expression::Mod(
+                    Box::new(Expression::Simple(
+                        Value::Integer(5)
+                    )),
+                    Box::new(Expression::Mult(
+                        Box::new(Expression::Simple(
+                            Value::Integer(2)
+                        )),
+                        Box::new(Expression::Simple(
+                            Value::Integer(3)
+                        ))
+                    ))
                 )
             )
         ],

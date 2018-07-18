@@ -175,6 +175,11 @@ impl Lexer {
                     let t = self.make_token(TokenKind::Div);
                     tokens.push(t);
                 }
+                '%' => {
+                    self.next();
+                    let t = self.make_token(TokenKind::Mod);
+                    tokens.push(t);
+                }
                 '<' => tokens.push(self.lex_lt()?),
                 '>' => tokens.push(self.lex_gt()?),
                 '=' => tokens.push(self.lex_equals()?),
@@ -665,6 +670,17 @@ mod test {
             Token {
                 kind: TokenKind::Div,
                 lexeme: "/".to_owned(),
+            }
+        ],
+    }
+
+    token_test! {
+        name: lex_mod,
+        text: "%",
+        token: [
+            Token {
+                kind: TokenKind::Mod,
+                lexeme: "%".to_owned(),
             }
         ],
     }

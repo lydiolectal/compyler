@@ -25,6 +25,7 @@ pub enum TokenKind {
     Minus,
     Mult,
     Div,
+    Mod,
 }
 
 #[derive(Clone, Debug, PartialEq)]

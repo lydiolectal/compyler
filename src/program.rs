@@ -39,6 +39,7 @@ pub enum Expression {
     Sub(Box<Expression>, Box<Expression>),
     Mult(Box<Expression>, Box<Expression>),
     Div(Box<Expression>, Box<Expression>),
+    Mod(Box<Expression>, Box<Expression>),
     Call {
         name: String,
         params: Vec<Expression>,
