@@ -298,6 +298,16 @@ impl Parser {
                 self.next();
                 Ok(Value::Variable(s))
             }
+            Token {
+                kind: TokenKind::ParenL,
+                ..
+            } => {
+                self.next();
+                let expr = self.parse_expression()?;
+                self.expect(TokenKind::ParenR);
+                let complex_atom = Value::Complex(Box::new(expr));
+                Ok(complex_atom)
+            }
             _ => Err(Error::UnexpectedToken(self.current.clone())),
         }
     }
@@ -459,6 +469,33 @@ mod test {
                             Value::Integer(3)
                         ))
                     ))
+                )
+            )
+        ],
+    }
+
+    parse_test! {
+        name:    print_paren_expression,
+        text:    "print (2 + 1) * 7",
+        program: [
+            Statement::Print(
+                Expression::Mult(
+                    Box::new(Expression::Simple(
+                        Value::Complex(
+                            Box::new(Expression::Add(
+                                Box::new(Expression::Simple(
+                                    Value::Integer(2)
+                                )),
+                                Box::new(Expression::Simple(
+                                    Value::Integer(1)
+                                ))
+                            ))
+                        )
+                    )),
+                    Box::new(Expression::Simple(
+                        Value::Integer(7)
+                        )
+                    )
                 )
             )
         ],

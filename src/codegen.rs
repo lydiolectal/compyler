@@ -266,6 +266,9 @@ impl CodeGenerator {
                 let value = Self::prepend_dollar(v);
                 atoms.push(Atom(value));
             }
+            _ => {
+                unimplemented!();
+            }
         }
         atoms
     }
