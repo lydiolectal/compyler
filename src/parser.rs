@@ -492,10 +492,10 @@ mod test {
                             ))
                         )
                     )),
+
                     Box::new(Expression::Simple(
                         Value::Integer(7)
-                        )
-                    )
+                    ))
                 )
             )
         ],
