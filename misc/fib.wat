@@ -21,7 +21,7 @@
             i32.add
         end)
     (func (export "main")
-        i32.const 4
+        i32.const 10
         call $fib
         call $print
     )

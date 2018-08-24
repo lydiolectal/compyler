@@ -82,7 +82,7 @@ impl Lexer {
         if let Some(c) = self.current {
             self.cur_token.push(c);
         }
-        if self.current != Some(' ') {
+        if self.current != Some(' ') && self.current != Some('\t') {
             self.seen_nonblank = true;
         }
 
@@ -98,7 +98,7 @@ impl Lexer {
     pub fn lex(mut self) -> Result<Vec<Token>, Error> {
         let mut tokens = Vec::new();
         while let Some(c) = self.current {
-            if !self.seen_nonblank && c != ' ' && c != '#' && c != '\n' {
+            if !self.seen_nonblank && c != ' ' && c != '\t' && c != '#' && c != '\n' {
                 // unwrap_or works on option and result types: will return the Some/Ok but wrapped
                 // value for err/none.
                 // cloned() clones the inner value of option, because last() returns option(&u64).
@@ -135,6 +135,7 @@ impl Lexer {
                 // }
                 // ' ' if self.column == 0 => tokens.push(self.lex_indent()),
                 ' ' => self.lex_whitespace(),
+                '\t' => self.lex_tab(),
                 '(' => {
                     self.next();
                     let t = self.make_token(TokenKind::ParenL);
@@ -265,6 +266,12 @@ impl Lexer {
 
     fn lex_whitespace(&mut self) {
         while self.next() == Some(' ') {}
+        self.cur_token.clear();
+    }
+
+    fn lex_tab(&mut self) {
+        self.column += 3;
+        self.next();
         self.cur_token.clear();
     }
 
@@ -420,6 +427,23 @@ mod test {
             Token {
                 kind: TokenKind::Indent,
                 lexeme: "   ".to_owned(),
+            }, Token {
+                kind: TokenKind::Integer,
+                lexeme: "39".to_owned(),
+            }, Token {
+                kind: TokenKind::Dedent,
+                lexeme: "".to_owned(),
+            }
+        ],
+    }
+
+    token_test! {
+        name: tabbed_indent,
+        text: "\t39",
+        token: [
+            Token {
+                kind: TokenKind::Indent,
+                lexeme: "    ".to_owned(),
             }, Token {
                 kind: TokenKind::Integer,
                 lexeme: "39".to_owned(),
