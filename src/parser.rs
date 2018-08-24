@@ -191,6 +191,11 @@ impl Parser {
                 let e = self.parse_comparison()?;
                 Ok(Expression::EqEq(Box::new(t), Box::new(e)))
             }
+            Ne => {
+                self.next();
+                let e = self.parse_comparison()?;
+                Ok(Expression::Ne(Box::new(t), Box::new(e)))
+            }
             Lt => {
                 self.next();
                 let e = self.parse_comparison()?;
@@ -597,6 +602,21 @@ mod test {
         text: "print 1>=2",
         program: [Statement::Print(
             Expression::Geq(
+                Box::new(Expression::Simple(
+                    Value::Integer(1)
+                )),
+                Box::new(Expression::Simple(
+                    Value::Integer(2)
+                ))
+            )
+        )],
+    }
+
+    parse_test! {
+        name: print_ne,
+        text: "print 1 !=2",
+        program: [Statement::Print(
+            Expression::Ne(
                 Box::new(Expression::Simple(
                     Value::Integer(1)
                 )),

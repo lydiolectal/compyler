@@ -44,15 +44,15 @@ impl Lexer {
             //
             // when types flow this way, i think of them
             // as flowing from the outputs to the inputs
-            chars: chars,
-            current: current,
+            chars,
+            current,
             column: 0,
             // indent_stack
             // - push current level of indentation onto stack whenever I add indent token.
             // - ex: [2, 4, 7, 9] means that indent, respectively, were: [2, 2, 3, 2].
             indent_stack: indent_stack,
             seen_nonblank: false,
-            cur_token: cur_token,
+            cur_token,
         }
     }
 
@@ -183,6 +183,7 @@ impl Lexer {
                 '<' => tokens.push(self.lex_lt()?),
                 '>' => tokens.push(self.lex_gt()?),
                 '=' => tokens.push(self.lex_equals()?),
+                '!' => tokens.push(self.lex_ne()?),
                 _ => return Err(Error::UnexpectedStartOfToken(c)),
             }
         }
@@ -291,6 +292,15 @@ impl Lexer {
             Ok(self.make_token(TokenKind::Geq))
         } else {
             Ok(self.make_token(TokenKind::Gt))
+        }
+    }
+
+    fn lex_ne(&mut self) -> Result<Token, Error> {
+        if self.next() == Some('=') {
+            self.next();
+            Ok(self.make_token(TokenKind::Ne))
+        } else {
+            Err(Error::UnexpectedCharacter(self.current))
         }
     }
 }
@@ -729,6 +739,23 @@ mod test {
                 lexeme: ">=".to_owned(),
             }
         ],
+    }
+
+    token_test! {
+        name: ne,
+        text: "!=",
+        token: [
+            Token {
+                kind: TokenKind::Ne,
+                lexeme: "!=".to_owned(),
+            }
+        ],
+    }
+
+    error_test! {
+        name: ne_error,
+        text: "!",
+        error: UnexpectedCharacter(None),
     }
 
     error_test! {

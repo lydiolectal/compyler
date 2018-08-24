@@ -228,6 +228,13 @@ impl CodeGenerator {
                 atoms.extend(expr_r);
                 atoms.push(Atom("i32.eq".to_owned()));
             }
+            Expression::Ne(ref v, ref e) => {
+                let expr_l = self.codegen_expression(v);
+                let expr_r = self.codegen_expression(e);
+                atoms.extend(expr_l);
+                atoms.extend(expr_r);
+                atoms.push(Atom("i32.ne".to_owned()));
+            }
             Expression::And(ref v, ref e) => {
                 let expr_l = self.codegen_expression(v);
                 let expr_r = self.codegen_expression(e);
@@ -316,6 +323,14 @@ mod test {
         wat: "(module (func $print (import \"host\" \"print\") \
          (param i32)) (func (export \"main\") i32.const 8 i32.const 8 \
          i32.le_s call $print))",
+    }
+
+    codegen_test! {
+        name: print_ne,
+        text: "print 8 != 8",
+        wat: "(module (func $print (import \"host\" \"print\") \
+         (param i32)) (func (export \"main\") i32.const 8 i32.const 8 \
+         i32.ne call $print))",
     }
 
     codegen_test! {

@@ -147,6 +147,12 @@ mod test {
     }
 
     test! {
+        name: print_ne,
+        input: "print 8 != 8",
+        output: ["i32:0"],
+    }
+
+    test! {
         name: print_div,
         input: "print 9 / 3",
         output: ["i32:3"],

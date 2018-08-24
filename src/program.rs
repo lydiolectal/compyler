@@ -31,6 +31,7 @@ pub enum Statement {
 #[derive(Debug, PartialEq, Clone)]
 pub enum Expression {
     EqEq(Box<Expression>, Box<Expression>),
+    Ne(Box<Expression>, Box<Expression>),
     Lt(Box<Expression>, Box<Expression>),
     Gt(Box<Expression>, Box<Expression>),
     Leq(Box<Expression>, Box<Expression>),
